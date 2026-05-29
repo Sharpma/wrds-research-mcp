@@ -67,6 +67,9 @@ wrds-research `
 ```
 
 The default `wrds_readonly` profile writes outputs under `~/.wrds-research-mcp/data/wrds`.
+WRDS calls open a fresh database connection for each operation and retry transient idle
+disconnects once by default. Set `WRDS_RESEARCH_MCP_DB_ATTEMPTS` to increase or decrease
+the retry count.
 
 ## Use With Codex
 

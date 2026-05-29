@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from wrds_research_mcp.catalog import CATALOG
-from wrds_research_mcp.clients import _wrds_connection_kwargs
 from wrds_research_mcp.policy import get_dataset_policy, get_permission_profile, load_policy_document
+from wrds_research_mcp.wrds_connection import run_wrds_operation
 
 
 def read_data_dictionary(
@@ -135,40 +135,33 @@ def _wrds_dataset_dictionaries(
     document: dict[str, Any],
     dataset_names: list[str],
 ) -> dict[str, Any]:
-    try:
-        import wrds
-    except ImportError as exc:
-        raise RuntimeError(
-            "Install WRDS support with: pip install 'wrds-research-mcp[wrds]' "
-            "or uv sync --extra wrds"
-        ) from exc
+    def read_dictionaries(db: Any) -> dict[str, Any]:
+        datasets = {}
+        for dataset_name in dataset_names:
+            dataset_policy = get_dataset_policy(document, dataset_name)
+            catalog_entry = CATALOG.get(dataset_name, {})
+            tables = {}
+            for table_ref in dataset_policy.tables:
+                library, table = _split_table_ref(table_ref)
+                description = f"Live WRDS metadata for {table_ref}."
+                columns = _describe_wrds_table(db, library, table)
+                tables[table_ref] = {
+                    "description": description,
+                    "columns": columns,
+                }
 
-    with redirect_stdout(io.StringIO()):
-        db = wrds.Connection(**_wrds_connection_kwargs())
-    datasets = {}
-    for dataset_name in dataset_names:
-        dataset_policy = get_dataset_policy(document, dataset_name)
-        catalog_entry = CATALOG.get(dataset_name, {})
-        tables = {}
-        for table_ref in dataset_policy.tables:
-            library, table = _split_table_ref(table_ref)
-            description = f"Live WRDS metadata for {table_ref}."
-            columns = _describe_wrds_table(db, library, table)
-            tables[table_ref] = {
-                "description": description,
-                "columns": columns,
+            datasets[dataset_name] = {
+                "label": catalog_entry.get("label", dataset_name),
+                "description": dataset_policy.description,
+                "frequency": catalog_entry.get("frequency"),
+                "identifiers": catalog_entry.get("identifiers", []),
+                "required_filters": dataset_policy.required_filters,
+                "allowed_query_templates": dataset_policy.allowed_query_templates,
+                "tables": tables,
             }
+        return datasets
 
-        datasets[dataset_name] = {
-            "label": catalog_entry.get("label", dataset_name),
-            "description": dataset_policy.description,
-            "frequency": catalog_entry.get("frequency"),
-            "identifiers": catalog_entry.get("identifiers", []),
-            "required_filters": dataset_policy.required_filters,
-            "allowed_query_templates": dataset_policy.allowed_query_templates,
-            "tables": tables,
-        }
-    return datasets
+    return run_wrds_operation(read_dictionaries)
 
 
 def _describe_wrds_table(db: Any, library: str, table: str) -> list[dict[str, Any]]:

@@ -15,7 +15,7 @@ from wrds_research_mcp.policy import (
     validate_library_access,
     validate_table_identifier,
 )
-from wrds_research_mcp.wrds_connection import connect_wrds_quietly
+from wrds_research_mcp.wrds_connection import run_wrds_operation
 
 
 SAFE_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -58,8 +58,7 @@ def materialize_wrds_table(
     params["limit"] = limit
 
     sql = _build_select_sql(library, table, selected_columns, where_sql)
-    db = connect_wrds_quietly()
-    dataframe = db.raw_sql(sql, params=params)
+    dataframe = run_wrds_operation(lambda db: db.raw_sql(sql, params=params))
 
     materialized = _write_generic_dataframe(
         dataframe=dataframe,

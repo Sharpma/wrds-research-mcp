@@ -11,7 +11,7 @@ from wrds_research_mcp.policy import (
     validate_library_access,
     validate_table_identifier,
 )
-from wrds_research_mcp.wrds_connection import connect_wrds_quietly
+from wrds_research_mcp.wrds_connection import is_transient_wrds_error, run_wrds_operation
 
 
 def list_wrds_libraries(
@@ -20,23 +20,26 @@ def list_wrds_libraries(
     policy_path: str | Path | None = None,
 ) -> dict[str, Any]:
     permission_profile = _wrds_profile(profile, policy_path)
-    db = connect_wrds_quietly()
-    libraries = []
-    for library in sorted(db.list_libraries()):
-        try:
-            validate_library_access(library, permission_profile)
-        except Exception:
-            continue
-        entry: dict[str, Any] = {"library": library}
-        if include_table_counts:
-            entry["table_count"] = len(db.list_tables(library=library))
-        libraries.append(entry)
 
-    return {
-        "profile": profile,
-        "library_count": len(libraries),
-        "libraries": libraries,
-    }
+    def read_libraries(db: Any) -> dict[str, Any]:
+        libraries = []
+        for library in sorted(db.list_libraries()):
+            try:
+                validate_library_access(library, permission_profile)
+            except Exception:
+                continue
+            entry: dict[str, Any] = {"library": library}
+            if include_table_counts:
+                entry["table_count"] = len(db.list_tables(library=library))
+            libraries.append(entry)
+
+        return {
+            "profile": profile,
+            "library_count": len(libraries),
+            "libraries": libraries,
+        }
+
+    return run_wrds_operation(read_libraries)
 
 
 def list_wrds_tables(
@@ -51,19 +54,21 @@ def list_wrds_tables(
     if limit <= 0:
         raise ValueError("limit must be positive.")
 
-    db = connect_wrds_quietly()
-    tables = sorted(db.list_tables(library=library))
-    if search:
-        needle = search.lower()
-        tables = [table for table in tables if needle in table.lower()]
+    def read_tables(db: Any) -> dict[str, Any]:
+        tables = sorted(db.list_tables(library=library))
+        if search:
+            needle = search.lower()
+            tables = [table for table in tables if needle in table.lower()]
 
-    return {
-        "profile": profile,
-        "library": library,
-        "table_count": len(tables),
-        "returned_count": min(len(tables), limit),
-        "tables": tables[:limit],
-    }
+        return {
+            "profile": profile,
+            "library": library,
+            "table_count": len(tables),
+            "returned_count": min(len(tables), limit),
+            "tables": tables[:limit],
+        }
+
+    return run_wrds_operation(read_tables)
 
 
 def describe_wrds_table(
@@ -76,23 +81,25 @@ def describe_wrds_table(
     validate_library_access(library, permission_profile)
     validate_table_identifier(table)
 
-    db = connect_wrds_quietly()
-    with redirect_stdout(io.StringIO()):
-        description = db.describe_table(library=library, table=table)
-    return {
-        "profile": profile,
-        "library": library,
-        "table": table,
-        "columns": [
-            {
-                "name": _none_if_missing(row.get("name")),
-                "type": _string_or_none(row.get("type")),
-                "nullable": _none_if_missing(row.get("nullable")),
-                "comment": _none_if_missing(row.get("comment")),
-            }
-            for row in description.to_dict("records")
-        ],
-    }
+    def read_description(db: Any) -> dict[str, Any]:
+        with redirect_stdout(io.StringIO()):
+            description = db.describe_table(library=library, table=table)
+        return {
+            "profile": profile,
+            "library": library,
+            "table": table,
+            "columns": [
+                {
+                    "name": _none_if_missing(row.get("name")),
+                    "type": _string_or_none(row.get("type")),
+                    "nullable": _none_if_missing(row.get("nullable")),
+                    "comment": _none_if_missing(row.get("comment")),
+                }
+                for row in description.to_dict("records")
+            ],
+        }
+
+    return run_wrds_operation(read_description)
 
 
 def probe_wrds_table_access(
@@ -108,35 +115,37 @@ def probe_wrds_table_access(
     if limit <= 0:
         raise ValueError("limit must be positive.")
 
-    db = connect_wrds_quietly()
-    if library:
-        rows, errors = _probe_one_library(db, library, limit, search)
-    else:
-        rows = []
-        errors = []
-        for candidate_library in sorted(db.list_libraries()):
-            if not _library_allowed_for_report(candidate_library, permission_profile):
-                continue
-            if len(rows) >= limit:
-                break
-            remaining = limit - len(rows)
-            library_rows, library_errors = _probe_one_library(
-                db,
-                candidate_library,
-                remaining,
-                search,
-            )
-            rows.extend(library_rows)
-            errors.extend(library_errors)
+    def read_access(db: Any) -> dict[str, Any]:
+        if library:
+            rows, errors = _probe_one_library(db, library, limit, search)
+        else:
+            rows = []
+            errors = []
+            for candidate_library in sorted(db.list_libraries()):
+                if not _library_allowed_for_report(candidate_library, permission_profile):
+                    continue
+                if len(rows) >= limit:
+                    break
+                remaining = limit - len(rows)
+                library_rows, library_errors = _probe_one_library(
+                    db,
+                    candidate_library,
+                    remaining,
+                    search,
+                )
+                rows.extend(library_rows)
+                errors.extend(library_errors)
 
-    return {
-        "profile": profile,
-        "scope": library or "all_allowed_libraries",
-        "returned_count": len(rows),
-        "all_returned_selectable": all(bool(row["selectable"]) for row in rows),
-        "errors": errors,
-        "tables": rows,
-    }
+        return {
+            "profile": profile,
+            "scope": library or "all_allowed_libraries",
+            "returned_count": len(rows),
+            "all_returned_selectable": all(bool(row["selectable"]) for row in rows),
+            "errors": errors,
+            "tables": rows,
+        }
+
+    return run_wrds_operation(read_access)
 
 
 def _probe_one_library(
@@ -172,6 +181,8 @@ limit %(limit)s
     try:
         dataframe = db.raw_sql(sql, params=params)
     except Exception as exc:
+        if is_transient_wrds_error(exc):
+            raise
         return [], [{"library": library, "error": f"{type(exc).__name__}: {exc}"}]
     return dataframe.to_dict("records"), []
 
