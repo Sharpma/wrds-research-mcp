@@ -3,12 +3,12 @@ from __future__ import annotations
 from wrds_research_mcp.models import ResearchRequest, SecurityIdentifier
 
 
-DEMO_SECURITIES = {
+AAPL_SECURITY = {
     "AAPL": SecurityIdentifier(
         ticker="AAPL",
         permno=14593,
         company_name="Apple Inc.",
-        source="demo_static_map",
+        source="static_identifier_map",
     )
 }
 
@@ -16,9 +16,9 @@ DEMO_SECURITIES = {
 def resolve_security_identifier(request: ResearchRequest) -> SecurityIdentifier:
     ticker = request.ticker.upper()
     try:
-        return DEMO_SECURITIES[ticker]
+        return AAPL_SECURITY[ticker]
     except KeyError as exc:
         raise ValueError(
-            f"Ticker {ticker!r} is not in the demo identifier map. "
-            "The demo currently supports AAPL."
+            f"Ticker {ticker!r} is not in the static identifier map. "
+            "The current approved workflow supports AAPL until identifier lookup is expanded."
         ) from exc

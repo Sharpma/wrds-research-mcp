@@ -1,4 +1,4 @@
-"""Natural-language WRDS research data demo package."""
+"""Natural-language WRDS research data MCP package."""
 
 __all__ = ["__version__"]
 

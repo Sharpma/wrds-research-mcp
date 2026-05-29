@@ -309,12 +309,12 @@ def build_server():
     )
     def get_research_data(
         request: str,
-        profile: str = "auto",
+        profile: str = "wrds_readonly",
         output_dir: str | None = None,
         source: str | None = None,
         policy_path: str | None = None,
     ) -> dict:
-        """Parse a request, fetch approved CRSP returns, and write parquet. profile='auto' prefers WRDS when configured."""
+        """Parse a request, fetch approved CRSP returns from WRDS, and write parquet."""
         return run_research_request(
             request,
             output_dir=output_dir,

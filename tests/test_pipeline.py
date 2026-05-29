@@ -1,25 +1,31 @@
 import json
+from datetime import date
 
 import pytest
 
 from wrds_research_mcp.pipeline import run_research_request
 
 
-def test_pipeline_materializes_mock_parquet(tmp_path) -> None:
+def test_pipeline_materializes_wrds_result_with_injected_client(tmp_path, monkeypatch) -> None:
     parquet = pytest.importorskip("pyarrow.parquet")
     policy_path = _write_test_policy(tmp_path)
+    monkeypatch.setattr(
+        "wrds_research_mcp.pipeline.get_data_client",
+        lambda source: _FakeWRDSClient(source),
+    )
 
     result = run_research_request(
         "Get AAPL daily return data for 2025-01",
-        profile="test_demo",
+        profile="test_wrds",
         policy_path=policy_path,
     )
 
-    assert result.dataset.row_count > 0
+    assert result.dataset.row_count == 1
     assert result.dataset.output_path.exists()
     assert result.dataset.output_path.suffix == ".parquet"
     assert result.dataset.metadata_path.exists()
-    assert result.permission_profile == "test_demo"
+    assert result.permission_profile == "test_wrds"
+    assert result.source == "wrds"
 
     table = parquet.read_table(result.dataset.output_path)
     assert table.num_rows == result.dataset.row_count
@@ -27,25 +33,29 @@ def test_pipeline_materializes_mock_parquet(tmp_path) -> None:
 
     metadata = json.loads(result.dataset.metadata_path.read_text(encoding="utf-8"))
     assert metadata["request"]["ticker"] == "AAPL"
-    assert metadata["source"] == "mock"
-    assert metadata["permission_profile"] == "test_demo"
+    assert metadata["source"] == "wrds"
+    assert metadata["permission_profile"] == "test_wrds"
     assert "crsp.stkdlysecuritydata" in metadata["catalog"]["tables"]
 
 
-def test_pipeline_auto_profile_uses_source_hint(tmp_path) -> None:
-    parquet = pytest.importorskip("pyarrow.parquet")
-    policy_path = _write_test_policy(tmp_path)
+class _FakeWRDSClient:
+    def __init__(self, source: str) -> None:
+        assert source == "wrds"
 
-    result = run_research_request(
-        "Get AAPL daily return data for 2025-01",
-        source="mock",
-        profile="auto",
-        policy_path=policy_path,
-    )
-
-    assert result.permission_profile == "demo"
-    assert result.source == "mock"
-    assert result.dataset.output_path.exists()
+    def fetch_returns(self, request, security, query_plan):
+        return [
+            {
+                "date": date(2025, 1, 2),
+                "permno": security.permno,
+                "ticker": security.ticker,
+                "company_name": security.company_name,
+                "ret": 0.01,
+                "retx": 0.01,
+                "prc": 243.85,
+                "vol": 55_700_000,
+                "source": "wrds",
+            }
+        ]
 
 
 def _write_test_policy(tmp_path):
@@ -54,17 +64,8 @@ def _write_test_policy(tmp_path):
     policy_path.write_text(
         f"""
 profiles:
-  demo:
-    source: mock
-    allowed_datasets:
-      - crsp_daily_returns
-    max_date_span_days: 366
-    max_rows: 100000
-    output_root: {output_root}
-    allow_raw_sql: false
-
-  test_demo:
-    source: mock
+  test_wrds:
+    source: wrds
     allowed_datasets:
       - crsp_daily_returns
     max_date_span_days: 366

@@ -23,11 +23,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--profile",
-        default="auto",
-        help=(
-            "Permission profile from the MCP permission policy. "
-            "Use auto to prefer wrds_readonly when WRDS credentials are configured."
-        ),
+        default="wrds_readonly",
+        help="Permission profile from the MCP permission policy.",
     )
     parser.add_argument(
         "--policy-path",
@@ -41,9 +38,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--source",
-        choices=["mock", "wrds"],
+        choices=["wrds"],
         default=None,
-        help="Override data source. Must match the selected permission profile.",
+        help="Override data source. The packaged profile uses WRDS.",
     )
     args = parser.parse_args()
 

@@ -11,8 +11,8 @@ uv sync --python 3.11 --extra all --extra dev
 uv run pytest
 ```
 
-WRDS credentials are optional for most unit tests. Use the local demo profile when adding
-logic that does not need a live WRDS account.
+WRDS credentials are optional for most unit tests. Unit tests should inject test-only
+fakes or monkeypatch WRDS clients instead of adding user-facing local data paths.
 
 ## Pull Request Guidelines
 
@@ -28,7 +28,7 @@ For changes that need real WRDS access:
 
 ```powershell
 uv run --python 3.11 --extra wrds wrds-research-setup
-uv run --python 3.11 --extra wrds wrds-research "Get AAPL monthly returns for 2025" --profile wrds_readonly
+uv run --python 3.11 --extra wrds wrds-research "Get AAPL monthly returns for 2025"
 ```
 
 Do not paste WRDS passwords into issues, pull requests, logs, or chat transcripts.

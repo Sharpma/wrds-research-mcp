@@ -6,7 +6,6 @@ choose an approved extraction path, and materialize analysis-ready Parquet files
 
 The project is currently alpha. It includes:
 
-- a local deterministic demo profile that does not require WRDS credentials
 - a WRDS read-only profile for real WRDS access
 - approved CRSP daily and monthly return workflows
 - live WRDS library/table/column discovery
@@ -14,6 +13,7 @@ The project is currently alpha. It includes:
 - Parquet outputs plus JSON metadata
 
 The server intentionally does not expose a raw SQL execution tool.
+Data extraction requires valid WRDS credentials.
 
 ## Install
 
@@ -38,21 +38,12 @@ If `pipx` is still not on `PATH`, use:
 py -m pipx install "wrds-research-mcp[all] @ git+https://github.com/Sharpma/wrds-research-mcp.git"
 ```
 
-Run the local demo:
-
-```powershell
-wrds-research "Get AAPL daily returns for 2025-01"
-```
-
-The demo writes outputs under `~/.wrds-research-mcp/data/demo`.
-
 For source development:
 
 ```powershell
 git clone https://github.com/Sharpma/wrds-research-mcp.git
 cd wrds-research-mcp
 uv sync --python 3.11 --extra all --extra dev
-uv run wrds-research "Get AAPL daily returns for 2025-01"
 ```
 
 ## Configure WRDS
@@ -71,13 +62,11 @@ MCP config, or chat.
 Run a real WRDS request:
 
 ```powershell
-wrds-research --source wrds `
-  "Get AAPL monthly returns for 2025" `
+wrds-research `
+  "Get AAPL monthly returns for 2025"
 ```
 
-`--source wrds` automatically selects the `wrds_readonly` profile. Without `--source`,
-the CLI uses `wrds_readonly` when WRDS credentials are configured and falls back to `demo`
-otherwise.
+The default `wrds_readonly` profile writes outputs under `~/.wrds-research-mcp/data/wrds`.
 
 ## Use With Codex
 
@@ -120,13 +109,11 @@ you have a custom policy:
 
 ```text
 get_research_data(
-  request="Get AAPL monthly returns for 2025",
-  source="wrds"
+  request="Get AAPL monthly returns for 2025"
 )
 ```
 
-This selects `wrds_readonly` automatically and writes under
-`~/.wrds-research-mcp/data/wrds`.
+This uses `wrds_readonly` by default and writes under `~/.wrds-research-mcp/data/wrds`.
 
 ## MCP Tools
 
@@ -188,7 +175,7 @@ A repo copy is also kept at `config/permissions.yaml` as an editable template.
 
 Profiles control:
 
-- source backend: `mock` or `wrds`
+- source backend: `wrds`
 - approved dataset contracts
 - maximum date span
 - maximum rows

@@ -4,20 +4,6 @@
 # decides what the server is allowed to query and where it may write outputs.
 
 profiles:
-  demo:
-    description: Local deterministic demo data. No WRDS credentials required.
-    source: mock
-    allowed_datasets:
-      - crsp_daily_returns
-      - crsp_monthly_returns
-    max_date_span_days: 366
-    max_rows: 100000
-    max_generic_rows: 1000
-    output_root: ~/.wrds-research-mcp/data/demo
-    allow_raw_sql: false
-    allowed_libraries: []
-    blocked_libraries: []
-
   wrds_readonly:
     description: Read-only WRDS profile for approved CRSP stock return queries and guarded generic extracts.
     source: wrds

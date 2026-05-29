@@ -57,7 +57,6 @@ def write_parquet_dataset(
         "query_plan": query_plan.as_dict(),
         "row_count": len(rows),
         "notes": [
-            "Demo source returns deterministic mock rows.",
             "WRDS source uses the approved query plan against current CRSP security tables.",
             "Return fields are decimals, not percentages.",
         ],

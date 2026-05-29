@@ -9,6 +9,7 @@ from wrds_research_mcp.capabilities import (
 def test_list_permission_profiles_exposes_wrds_readonly() -> None:
     profiles = list_permission_profiles()
 
+    assert sorted(profiles["profiles"]) == ["wrds_readonly"]
     assert profiles["profiles"]["wrds_readonly"]["source"] == "wrds"
     assert profiles["profiles"]["wrds_readonly"]["allowed_libraries"] == ["*"]
 

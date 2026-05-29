@@ -25,17 +25,17 @@ def test_default_policy_loads_outside_repo_root(tmp_path, monkeypatch) -> None:
     assert "*" in profile.allowed_libraries
 
 
-def test_demo_profile_rejects_wrds_source() -> None:
+def test_wrds_profile_rejects_non_wrds_source() -> None:
     document = load_policy_document()
-    profile = get_permission_profile(document, "demo")
+    profile = get_permission_profile(document, "wrds_readonly")
 
     with pytest.raises(PolicyViolation, match="not allowed"):
-        validate_source("wrds", profile)
+        validate_source("csv", profile)
 
 
 def test_policy_rejects_too_wide_date_range() -> None:
     document = load_policy_document()
-    profile = get_permission_profile(document, "demo")
+    profile = get_permission_profile(document, "wrds_readonly")
     dataset_policy = get_dataset_policy(document, "crsp_daily_returns")
     request = ResearchRequest(
         original_text="Get AAPL returns",
@@ -54,15 +54,15 @@ def test_policy_rejects_too_wide_date_range() -> None:
 
 def test_policy_rejects_output_dir_outside_profile_root() -> None:
     document = load_policy_document()
-    profile = get_permission_profile(document, "demo")
+    profile = get_permission_profile(document, "wrds_readonly")
 
     with pytest.raises(PolicyViolation, match="outside allowed root"):
-        resolve_output_dir("data/not-demo", profile)
+        resolve_output_dir("data/not-wrds", profile)
 
 
 def test_policy_rejects_disallowed_query_table() -> None:
     document = load_policy_document()
-    profile = get_permission_profile(document, "demo")
+    profile = get_permission_profile(document, "wrds_readonly")
     dataset_policy = get_dataset_policy(document, "crsp_daily_returns")
     query_plan = QueryPlan(
         sql="select * from comp.funda",

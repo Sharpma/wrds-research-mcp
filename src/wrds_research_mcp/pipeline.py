@@ -16,7 +16,6 @@ from wrds_research_mcp.policy import (
     validate_request_policy,
     validate_source,
 )
-from wrds_research_mcp.profile_selection import resolve_profile_name
 from wrds_research_mcp.query import build_query_plan
 from wrds_research_mcp.writers import write_parquet_dataset
 
@@ -25,10 +24,9 @@ def run_research_request(
     text: str,
     output_dir: str | Path | None = None,
     source: str | None = None,
-    profile: str = "auto",
+    profile: str = "wrds_readonly",
     policy_path: str | Path | None = None,
 ) -> PipelineResult:
-    profile = resolve_profile_name(profile, source)
     policy_document = load_policy_document(policy_path)
     permission_profile = get_permission_profile(policy_document, profile)
     selected_source = source or permission_profile.source

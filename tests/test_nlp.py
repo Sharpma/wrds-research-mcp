@@ -3,7 +3,7 @@ from datetime import date
 from wrds_research_mcp.nlp import parse_research_request
 
 
-def test_parse_chinese_demo_request() -> None:
+def test_parse_chinese_daily_request() -> None:
     request = parse_research_request("我现在要2025年1月苹果公司的日度收益率数据")
 
     assert request.dataset == "crsp_daily_returns"

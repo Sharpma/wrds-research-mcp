@@ -13,12 +13,12 @@ def test_wrds_connection_kwargs_requires_username(monkeypatch) -> None:
 
 
 def test_wrds_connection_kwargs_reads_wrds_environment(monkeypatch) -> None:
-    monkeypatch.setenv("WRDS_USERNAME", "demo_user")
-    monkeypatch.setenv("WRDS_PASSWORD", "demo_password")
+    monkeypatch.setenv("WRDS_USERNAME", "sample_user")
+    monkeypatch.setenv("WRDS_PASSWORD", "sample_password")
 
     assert _wrds_connection_kwargs() == {
-        "wrds_username": "demo_user",
-        "wrds_password": "demo_password",
+        "wrds_username": "sample_user",
+        "wrds_password": "sample_password",
     }
 
 
