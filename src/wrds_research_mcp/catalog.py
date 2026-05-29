@@ -13,5 +13,20 @@ CATALOG = {
             "prc": "Closing price, absolute value",
             "vol": "Trading volume",
         },
-    }
+    },
+    "crsp_monthly_returns": {
+        "label": "CRSP monthly stock returns",
+        "tables": ["crsp.stkmthsecuritydata"],
+        "frequency": "monthly",
+        "identifiers": ["ticker", "permno"],
+        "fields": {
+            "date": "Monthly calendar date",
+            "permno": "CRSP permanent security identifier",
+            "ticker": "Ticker symbol",
+            "ret": "Monthly total return, stored as decimal",
+            "retx": "Monthly return excluding dividends, stored as decimal",
+            "prc": "Month-end price, absolute value",
+            "vol": "Monthly trading volume",
+        },
+    },
 }

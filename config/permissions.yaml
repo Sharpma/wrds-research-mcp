@@ -9,16 +9,18 @@ profiles:
     source: mock
     allowed_datasets:
       - crsp_daily_returns
+      - crsp_monthly_returns
     max_date_span_days: 366
     max_rows: 100000
     output_root: data/demo
     allow_raw_sql: false
 
   wrds_readonly:
-    description: Read-only WRDS profile for approved CRSP daily return queries.
+    description: Read-only WRDS profile for approved CRSP stock return queries.
     source: wrds
     allowed_datasets:
       - crsp_daily_returns
+      - crsp_monthly_returns
     max_date_span_days: 366
     max_rows: 100000
     output_root: data/wrds
@@ -49,3 +51,27 @@ datasets:
       - parquet
     allowed_query_templates:
       - crsp_daily_returns_v2
+
+  crsp_monthly_returns:
+    description: CRSP monthly stock returns from current monthly security data.
+    tables:
+      - crsp.stkmthsecuritydata
+    allowed_fields:
+      - date
+      - permno
+      - ticker
+      - company_name
+      - ret
+      - retx
+      - prc
+      - vol
+      - source
+    required_filters:
+      - date_range
+      - security_identifier
+    allowed_frequencies:
+      - monthly
+    allowed_output_formats:
+      - parquet
+    allowed_query_templates:
+      - crsp_monthly_returns_v1

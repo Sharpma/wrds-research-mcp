@@ -16,7 +16,7 @@ from wrds_research_mcp.policy import (
     validate_request_policy,
     validate_source,
 )
-from wrds_research_mcp.query import build_crsp_daily_returns_query
+from wrds_research_mcp.query import build_query_plan
 from wrds_research_mcp.writers import write_parquet_dataset
 
 
@@ -38,11 +38,11 @@ def run_research_request(
     validate_request_policy(request, permission_profile, dataset_policy)
 
     security = resolve_security_identifier(request)
-    query_plan = build_crsp_daily_returns_query(request, security, permission_profile.max_rows)
+    query_plan = build_query_plan(request, security, permission_profile.max_rows)
     validate_query_policy(query_plan, permission_profile, dataset_policy)
 
     client = get_data_client(selected_source)
-    rows = client.fetch_daily_returns(request, security, query_plan)
+    rows = client.fetch_returns(request, security, query_plan)
     enforce_row_limit(len(rows), permission_profile)
     dataset = write_parquet_dataset(
         rows,

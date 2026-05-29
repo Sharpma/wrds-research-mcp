@@ -21,3 +21,13 @@ def test_parse_english_ticker_request() -> None:
     assert request.ticker == "AAPL"
     assert request.start_date == date(2025, 1, 1)
     assert request.end_date == date(2025, 1, 31)
+
+
+def test_parse_chinese_monthly_year_request() -> None:
+    request = parse_research_request("我想获取苹果公司股票2025年的月度收益率数据")
+
+    assert request.dataset == "crsp_monthly_returns"
+    assert request.ticker == "AAPL"
+    assert request.start_date == date(2025, 1, 1)
+    assert request.end_date == date(2025, 12, 31)
+    assert request.frequency == "monthly"

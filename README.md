@@ -5,9 +5,9 @@ Natural-language access layer for WRDS research data.
 This `demo` branch contains a minimal, runnable proof of concept:
 
 1. Parse a natural-language request such as `我现在要2025年1月苹果公司的日度收益率数据`.
-2. Convert it into a structured CRSP daily returns request.
+2. Convert it into a structured CRSP daily or monthly returns request.
 3. Resolve Apple/AAPL to a demo CRSP identifier.
-4. Build a parameterized WRDS SQL query plan for `crsp.stkdlysecuritydata` and `crsp.stocknames_v2`.
+4. Build a parameterized WRDS SQL query plan from an approved query template.
 5. Validate the request against `config/permissions.yaml`.
 6. Materialize deterministic mock rows as Parquet plus metadata.
 
@@ -61,6 +61,7 @@ Run a specific profile:
 
 ```powershell
 uv run wrds-research-demo "Get AAPL daily returns for 2025-01" --profile demo
+uv run wrds-research-demo "Get AAPL monthly returns for 2025" --profile demo
 ```
 
 The server rejects requests that try to use a source, table, field, query template, or output directory outside the selected profile.
@@ -88,6 +89,7 @@ Then run:
 
 ```powershell
 uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL daily returns for 2025-01" --profile wrds_readonly
+uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL monthly returns for 2025" --profile wrds_readonly
 ```
 
 WRDS authentication should be configured through the normal WRDS mechanisms, such as `.pgpass` or environment-backed local configuration. Do not commit credentials.
@@ -106,7 +108,34 @@ Run the stdio MCP server:
 uv run wrds-research-mcp
 ```
 
-The demo server exposes one tool:
+The MCP server exposes discoverable tools instead of a raw SQL endpoint:
+
+- `list_wrds_profiles`: discover profiles, sources, limits, and dataset allowlists
+- `list_wrds_datasets`: discover datasets allowed by a profile
+- `describe_wrds_dataset`: inspect identifiers, fields, tables, templates, and limits
+- `read_wrds_data_dictionary`: read allowed dataset/table/field metadata
+- `search_wrds_data_dictionary`: search the allowed data dictionary
+- `plan_wrds_research_request`: parse natural language into an approved request and query plan
+- `get_research_data`: execute the approved request and write Parquet plus metadata
+
+Recommended Agent flow:
+
+```text
+list_wrds_profiles
+list_wrds_datasets(profile="wrds_readonly")
+read_wrds_data_dictionary(profile="wrds_readonly", source="catalog")
+describe_wrds_dataset(dataset="crsp_monthly_returns", profile="wrds_readonly")
+search_wrds_data_dictionary(query="monthly return", dataset="crsp_monthly_returns")
+plan_wrds_research_request(request="Get AAPL monthly returns for 2025", profile="wrds_readonly")
+get_research_data(request="Get AAPL monthly returns for 2025", profile="wrds_readonly")
+```
+
+`read_wrds_data_dictionary` supports two sources:
+
+- `catalog`: local policy/catalog metadata, no WRDS connection required
+- `wrds`: live WRDS table descriptions for approved tables only
+
+The execution tool accepts:
 
 ```text
 get_research_data(
@@ -116,6 +145,14 @@ get_research_data(
   source: str | None = None,
   policy_path: str | None = None
 )
+```
+
+The server also exposes JSON resources:
+
+```text
+wrds://profiles
+wrds://datasets
+wrds://dictionary
 ```
 
 ## Tests
@@ -128,5 +165,6 @@ uv run --extra dev pytest
 
 - Only Apple/AAPL is included in the static identifier map.
 - Natural-language parsing is intentionally rule-based and narrow.
+- Current deterministic query templates cover CRSP daily and monthly stock returns.
 - Mock data is deterministic and is not real WRDS/CRSP data.
 - Real WRDS mode requires valid WRDS access and the optional `wrds` package.

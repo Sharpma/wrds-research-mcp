@@ -26,6 +26,11 @@ MONTH_PATTERNS = [
     re.compile(r"(?P<year>19\d{2}|20\d{2})[-/](?P<month>0?[1-9]|1[0-2])(?![-/]\d)"),
 ]
 
+YEAR_PATTERNS = [
+    re.compile(r"(?P<year>19\d{2}|20\d{2})\s*年"),
+    re.compile(r"\b(?P<year>19\d{2}|20\d{2})\b"),
+]
+
 
 def parse_research_request(text: str) -> ResearchRequest:
     clean_text = text.strip()
@@ -36,11 +41,12 @@ def parse_research_request(text: str) -> ResearchRequest:
     start_date, end_date = _parse_date_range(clean_text)
 
     fields = _parse_fields(clean_text)
-    frequency = "daily"
+    frequency = _parse_frequency(clean_text)
+    dataset = "crsp_monthly_returns" if frequency == "monthly" else "crsp_daily_returns"
 
     return ResearchRequest(
         original_text=clean_text,
-        dataset="crsp_daily_returns",
+        dataset=dataset,
         company=company,
         ticker=ticker,
         start_date=start_date,
@@ -86,6 +92,12 @@ def _parse_date_range(text: str) -> tuple[date, date]:
             last_day = calendar.monthrange(year, month)[1]
             return date(year, month, 1), date(year, month, last_day)
 
+    for pattern in YEAR_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            year = int(match.group("year"))
+            return date(year, 1, 1), date(year, 12, 31)
+
     raise ValueError("Could not identify a date range. Try a month such as 2025年1月 or 2025-01.")
 
 
@@ -114,3 +126,10 @@ def _parse_fields(text: str) -> list[str]:
         fields.append("vol")
 
     return fields or ["ret"]
+
+
+def _parse_frequency(text: str) -> str:
+    lowered = text.lower()
+    if "月度" in text or "monthly" in lowered or "month-end" in lowered:
+        return "monthly"
+    return "daily"

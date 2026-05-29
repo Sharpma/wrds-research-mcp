@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from contextlib import redirect_stdout
 from datetime import date, timedelta
+import io
 import os
 from pathlib import Path
 from typing import Protocol
@@ -9,7 +11,7 @@ from wrds_research_mcp.models import QueryPlan, ResearchRequest, SecurityIdentif
 
 
 class DataClient(Protocol):
-    def fetch_daily_returns(
+    def fetch_returns(
         self,
         request: ResearchRequest,
         security: SecurityIdentifier,
@@ -21,11 +23,21 @@ class DataClient(Protocol):
 class MockCRSPClient:
     source = "mock"
 
-    def fetch_daily_returns(
+    def fetch_returns(
         self,
         request: ResearchRequest,
         security: SecurityIdentifier,
         query_plan: QueryPlan,
+    ) -> list[dict]:
+        if request.frequency == "monthly":
+            return self._fetch_monthly_returns(request, security)
+
+        return self._fetch_daily_returns(request, security)
+
+    def _fetch_daily_returns(
+        self,
+        request: ResearchRequest,
+        security: SecurityIdentifier,
     ) -> list[dict]:
         rows = []
         price = 188.0
@@ -49,6 +61,37 @@ class MockCRSPClient:
 
         return rows
 
+    def _fetch_monthly_returns(
+        self,
+        request: ResearchRequest,
+        security: SecurityIdentifier,
+    ) -> list[dict]:
+        rows = []
+        price = 188.0
+
+        current = date(request.start_date.year, request.start_date.month, 1)
+        while current <= request.end_date:
+            month_end = _month_end(current)
+            if month_end >= request.start_date:
+                monthly_return = round(((current.month % 7) - 3) * 0.015, 6)
+                price = round(price * (1 + monthly_return), 2)
+                rows.append(
+                    {
+                        "date": month_end,
+                        "permno": security.permno,
+                        "ticker": security.ticker,
+                        "company_name": security.company_name,
+                        "ret": monthly_return,
+                        "retx": monthly_return,
+                        "prc": price,
+                        "vol": 1_000_000_000 + current.month * 10_000_000,
+                        "source": self.source,
+                    }
+                )
+            current = _next_month(current)
+
+        return rows
+
 
 class WRDSCRSPClient:
     source = "wrds"
@@ -59,9 +102,10 @@ class WRDSCRSPClient:
         except ImportError as exc:
             raise RuntimeError("Install WRDS support with: uv sync --extra wrds") from exc
 
-        self.connection = wrds.Connection(**_wrds_connection_kwargs())
+        with redirect_stdout(io.StringIO()):
+            self.connection = wrds.Connection(**_wrds_connection_kwargs())
 
-    def fetch_daily_returns(
+    def fetch_returns(
         self,
         request: ResearchRequest,
         security: SecurityIdentifier,
@@ -143,3 +187,14 @@ def _demo_market_holidays(year: int) -> set[date]:
     if year == 2025:
         return {date(2025, 1, 1), date(2025, 1, 20)}
     return set()
+
+
+def _month_end(day: date) -> date:
+    next_month = _next_month(day)
+    return next_month - timedelta(days=1)
+
+
+def _next_month(day: date) -> date:
+    if day.month == 12:
+        return date(day.year + 1, 1, 1)
+    return date(day.year, day.month + 1, 1)
