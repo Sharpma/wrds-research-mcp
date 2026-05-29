@@ -15,29 +15,35 @@ The project is currently alpha. It includes:
 
 The server intentionally does not expose a raw SQL execution tool.
 
-## Install From Source
+## Install
 
 ```powershell
-git clone https://github.com/Sharpma/wrds-research-mcp.git
-cd wrds-research-mcp
-git switch package
-uv sync --python 3.11 --extra all --extra dev
+pipx install "wrds-research-mcp[all] @ git+https://github.com/Sharpma/wrds-research-mcp.git"
 ```
 
 Run the local demo:
 
 ```powershell
-uv run wrds-research "Get AAPL daily returns for 2025-01"
+wrds-research "Get AAPL daily returns for 2025-01"
 ```
 
 The demo writes local ignored outputs under `data/demo`.
+
+For source development:
+
+```powershell
+git clone https://github.com/Sharpma/wrds-research-mcp.git
+cd wrds-research-mcp
+uv sync --python 3.11 --extra all --extra dev
+uv run wrds-research "Get AAPL daily returns for 2025-01"
+```
 
 ## Configure WRDS
 
 Run the setup helper once on each machine:
 
 ```powershell
-uv run --python 3.11 --extra wrds wrds-research-setup
+wrds-research-setup
 ```
 
 It prompts for your WRDS username and password, writes the standard PostgreSQL `pgpass`
@@ -48,7 +54,7 @@ MCP config, or chat.
 Run a real WRDS request:
 
 ```powershell
-uv run --python 3.11 --extra wrds wrds-research `
+wrds-research `
   "Get AAPL monthly returns for 2025" `
   --profile wrds_readonly
 ```
@@ -58,7 +64,7 @@ uv run --python 3.11 --extra wrds wrds-research `
 For local development, register the stdio MCP server:
 
 ```powershell
-codex mcp add wrds-research-mcp -- uv --directory <path-to-wrds-research-mcp> run --python 3.11 --extra all wrds-research-mcp
+codex mcp add wrds-research-mcp -- wrds-research-mcp
 ```
 
 Do not add WRDS passwords through `codex mcp add --env`. Use `wrds-research-setup`
@@ -136,7 +142,7 @@ Profiles control:
 Use a custom policy file with:
 
 ```powershell
-uv run wrds-research "Get AAPL daily returns for 2025-01" --policy-path config/permissions.yaml
+wrds-research "Get AAPL daily returns for 2025-01" --policy-path config/permissions.yaml
 ```
 
 ## Development
