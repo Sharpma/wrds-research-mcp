@@ -84,6 +84,19 @@ For local development, register the stdio MCP server:
 codex mcp add wrds-research-mcp -- wrds-research-mcp
 ```
 
+If PowerShell blocks `codex.ps1` with an execution policy error, use the Windows command
+shim instead:
+
+```powershell
+codex.cmd mcp add wrds-research-mcp -- wrds-research-mcp
+```
+
+Alternatively, allow locally installed scripts for the current user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
 Do not add WRDS passwords through `codex mcp add --env`. Use `wrds-research-setup`
 instead.
 
