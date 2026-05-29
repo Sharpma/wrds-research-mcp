@@ -13,7 +13,7 @@ profiles:
     max_date_span_days: 366
     max_rows: 100000
     max_generic_rows: 1000
-    output_root: data/demo
+    output_root: ~/.wrds-research-mcp/data/demo
     allow_raw_sql: false
     allowed_libraries: []
     blocked_libraries: []
@@ -27,7 +27,7 @@ profiles:
     max_date_span_days: 366
     max_rows: 100000
     max_generic_rows: 5000
-    output_root: data/wrds
+    output_root: ~/.wrds-research-mcp/data/wrds
     allow_raw_sql: false
     allowed_libraries:
       - "*"

@@ -44,7 +44,7 @@ Run the local demo:
 wrds-research "Get AAPL daily returns for 2025-01"
 ```
 
-The demo writes local ignored outputs under `data/demo`.
+The demo writes outputs under `~/.wrds-research-mcp/data/demo`.
 
 For source development:
 
@@ -99,6 +99,18 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 Do not add WRDS passwords through `codex mcp add --env`. Use `wrds-research-setup`
 instead.
+
+If Codex says the server is configured but the current session has no WRDS tools, remove
+and re-add the entry to clear malformed command text, then start a new Codex session:
+
+```powershell
+codex.cmd mcp remove wrds-research-mcp
+codex.cmd mcp add wrds-research-mcp -- wrds-research-mcp
+codex.cmd mcp get --json wrds-research-mcp
+```
+
+The server is a stdio MCP process, so running `wrds-research-mcp` directly may appear to
+hang. That is expected; it is waiting for MCP JSON-RPC messages on stdin.
 
 ## MCP Tools
 
