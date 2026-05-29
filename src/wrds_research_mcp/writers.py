@@ -15,6 +15,7 @@ def write_parquet_dataset(
     security: SecurityIdentifier,
     query_plan: QueryPlan,
     source: str,
+    permission_profile: str,
 ) -> MaterializedDataset:
     try:
         import pyarrow as pa
@@ -49,6 +50,7 @@ def write_parquet_dataset(
     metadata = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": source,
+        "permission_profile": permission_profile,
         "request": request.as_dict(),
         "security": security.as_dict(),
         "catalog": CATALOG[request.dataset],

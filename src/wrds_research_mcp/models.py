@@ -52,11 +52,19 @@ class SecurityIdentifier:
 class QueryPlan:
     sql: str
     params: dict[str, Any]
+    dataset: str
+    tables: list[str]
+    fields: list[str]
+    template_id: str
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "sql": self.sql,
             "params": self.params,
+            "dataset": self.dataset,
+            "tables": self.tables,
+            "fields": self.fields,
+            "template_id": self.template_id,
         }
 
 
@@ -81,6 +89,7 @@ class PipelineResult:
     query_plan: QueryPlan
     dataset: MaterializedDataset
     source: str
+    permission_profile: str
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -89,4 +98,5 @@ class PipelineResult:
             "query_plan": self.query_plan.as_dict(),
             "dataset": self.dataset.as_dict(),
             "source": self.source,
+            "permission_profile": self.permission_profile,
         }

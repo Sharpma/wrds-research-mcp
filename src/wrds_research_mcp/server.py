@@ -14,11 +14,19 @@ def build_server():
     @mcp.tool()
     def get_research_data(
         request: str,
-        output_dir: str = "data/demo",
-        source: str = "mock",
+        profile: str = "demo",
+        output_dir: str | None = None,
+        source: str | None = None,
+        policy_path: str | None = None,
     ) -> dict:
         """Parse a research request, fetch CRSP daily returns, and write parquet."""
-        return run_research_request(request, output_dir=output_dir, source=source).as_dict()
+        return run_research_request(
+            request,
+            output_dir=output_dir,
+            source=source,
+            profile=profile,
+            policy_path=policy_path,
+        ).as_dict()
 
     return mcp
 

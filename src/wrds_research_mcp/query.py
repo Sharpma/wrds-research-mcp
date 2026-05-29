@@ -6,6 +6,7 @@ from wrds_research_mcp.models import QueryPlan, ResearchRequest, SecurityIdentif
 def build_crsp_daily_returns_query(
     request: ResearchRequest,
     security: SecurityIdentifier,
+    max_rows: int,
 ) -> QueryPlan:
     sql = """
 select
@@ -24,6 +25,7 @@ where d.permno = %(permno)s
     and sn.ticker = %(ticker)s
     and d.date between %(start_date)s and %(end_date)s
 order by d.date
+limit %(max_rows)s
 """.strip()
 
     return QueryPlan(
@@ -33,5 +35,10 @@ order by d.date
             "ticker": security.ticker,
             "start_date": request.start_date.isoformat(),
             "end_date": request.end_date.isoformat(),
+            "max_rows": max_rows,
         },
+        dataset=request.dataset,
+        tables=["crsp.dsf", "crsp.stocknames"],
+        fields=["date", "permno", "ticker", "ret", "retx", "prc", "vol"],
+        template_id="crsp_daily_returns_v1",
     )
