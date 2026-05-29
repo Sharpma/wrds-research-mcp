@@ -17,8 +17,25 @@ The server intentionally does not expose a raw SQL execution tool.
 
 ## Install
 
+Prerequisites on Windows:
+
+```powershell
+py --version
+git --version
+py -m pip install --user pipx
+py -m pipx ensurepath
+```
+
+Restart PowerShell after `ensurepath`, then install:
+
 ```powershell
 pipx install "wrds-research-mcp[all] @ git+https://github.com/Sharpma/wrds-research-mcp.git"
+```
+
+If `pipx` is still not on `PATH`, use:
+
+```powershell
+py -m pipx install "wrds-research-mcp[all] @ git+https://github.com/Sharpma/wrds-research-mcp.git"
 ```
 
 Run the local demo:
