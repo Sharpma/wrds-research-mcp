@@ -1,0 +1,32 @@
+[project]
+name = "wrds-research-mcp"
+version = "0.1.0"
+description = "Minimal demo for natural-language WRDS research data requests."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyarrow>=16.0.0",
+]
+
+[project.optional-dependencies]
+wrds = [
+    "wrds>=3.2.0",
+]
+mcp = [
+    "mcp>=1.9.0",
+]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+wrds-research-demo = "wrds_research_mcp.cli:main"
+wrds-research-mcp = "wrds_research_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

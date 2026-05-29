@@ -2,16 +2,85 @@
 
 Natural-language access layer for WRDS research data.
 
-This repository is being prepared to support workflows such as requesting
-CRSP data in plain language and producing analysis-ready Parquet outputs.
+This `demo` branch contains a minimal, runnable proof of concept:
 
-Initial scope: repository setup only.
+1. Parse a natural-language request such as `我现在要2025年1月苹果公司的日度收益率数据`.
+2. Convert it into a structured CRSP daily returns request.
+3. Resolve Apple/AAPL to a demo CRSP identifier.
+4. Build a parameterized WRDS SQL query plan for `crsp.dsf` and `crsp.stocknames`.
+5. Materialize deterministic mock rows as Parquet plus metadata.
 
-## 中文说明
+The default path uses mock data so the demo can run before WRDS credentials are configured. A WRDS client hook is included for the same query plan.
 
-`wrds-research-mcp` 的目标是提供一个面向 WRDS 研究数据的自然语言访问层。
-未来它将支持类似“获取 2025 年 1 月苹果公司日度收益率数据”的请求，
-自动识别数据源、查询 CRSP 等 WRDS 数据库，并整理为可直接分析使用的
-Parquet 数据文件。
+## Quick Start
 
-当前阶段仅完成仓库初始化与远端连接配置，暂不包含 WRDS 或 MCP 功能实现。
+```powershell
+git switch demo
+uv run wrds-research-demo
+```
+
+Run with an explicit request:
+
+```powershell
+uv run wrds-research-demo "我现在要2025年1月苹果公司的日度收益率数据"
+```
+
+The demo writes ignored local outputs under:
+
+```text
+data/demo/crsp_daily_returns/symbol=AAPL/
+```
+
+Each run produces:
+
+- `*.parquet`: analysis-ready tabular data
+- `*.metadata.json`: request, identifier, catalog, and SQL query plan metadata
+
+## Optional WRDS Mode
+
+Install optional WRDS support:
+
+```powershell
+uv sync --extra wrds
+```
+
+Then run:
+
+```powershell
+uv run wrds-research-demo "Get AAPL daily returns for 2025-01" --source wrds
+```
+
+WRDS authentication should be configured through the normal WRDS mechanisms, such as `.pgpass` or environment-backed local configuration. Do not commit credentials.
+
+## Optional MCP Server
+
+Install optional MCP support:
+
+```powershell
+uv sync --extra mcp
+```
+
+Run the stdio MCP server:
+
+```powershell
+uv run wrds-research-mcp
+```
+
+The demo server exposes one tool:
+
+```text
+get_research_data(request: str, output_dir: str = "data/demo", source: str = "mock")
+```
+
+## Tests
+
+```powershell
+uv run --extra dev pytest
+```
+
+## Current Demo Limits
+
+- Only Apple/AAPL is included in the static identifier map.
+- Natural-language parsing is intentionally rule-based and narrow.
+- Mock data is deterministic and is not real WRDS/CRSP data.
+- Real WRDS mode requires valid WRDS access and the optional `wrds` package.
