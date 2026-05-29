@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
@@ -30,8 +31,11 @@ class PermissionProfile:
     allowed_datasets: list[str]
     max_date_span_days: int
     max_rows: int
+    max_generic_rows: int
     output_root: str
     allow_raw_sql: bool
+    allowed_libraries: list[str]
+    blocked_libraries: list[str]
     description: str = ""
 
 
@@ -72,8 +76,11 @@ def get_permission_profile(document: dict[str, Any], profile_name: str) -> Permi
         allowed_datasets=list(raw_profile.get("allowed_datasets", [])),
         max_date_span_days=int(raw_profile["max_date_span_days"]),
         max_rows=int(raw_profile["max_rows"]),
+        max_generic_rows=int(raw_profile.get("max_generic_rows", raw_profile["max_rows"])),
         output_root=str(raw_profile["output_root"]),
         allow_raw_sql=bool(raw_profile.get("allow_raw_sql", False)),
+        allowed_libraries=list(raw_profile.get("allowed_libraries", [])),
+        blocked_libraries=list(raw_profile.get("blocked_libraries", [])),
         description=str(raw_profile.get("description", "")),
     )
 
@@ -210,3 +217,40 @@ def enforce_row_limit(row_count: int, profile: PermissionProfile) -> None:
         raise PolicyViolation(
             f"Result has {row_count} rows; profile limit is {profile.max_rows} rows."
         )
+
+
+def validate_library_access(library: str, profile: PermissionProfile) -> None:
+    if not _identifier_name_is_safe(library):
+        raise PolicyViolation(f"Unsafe library name: {library!r}")
+
+    if _matches_patterns(library, profile.blocked_libraries):
+        raise PolicyViolation(f"Library {library!r} is blocked by profile {profile.name!r}.")
+
+    if not profile.allowed_libraries:
+        raise PolicyViolation(f"Profile {profile.name!r} does not allow generic library access.")
+
+    if not _matches_patterns(library, profile.allowed_libraries):
+        raise PolicyViolation(f"Library {library!r} is not allowed by profile {profile.name!r}.")
+
+
+def validate_table_identifier(table: str) -> None:
+    if not _identifier_name_is_safe(table):
+        raise PolicyViolation(f"Unsafe table name: {table!r}")
+
+
+def validate_generic_limit(limit: int, profile: PermissionProfile) -> None:
+    if limit <= 0:
+        raise PolicyViolation("Limit must be positive.")
+    if limit > profile.max_generic_rows:
+        raise PolicyViolation(
+            f"Limit {limit} exceeds generic row limit {profile.max_generic_rows} "
+            f"for profile {profile.name!r}."
+        )
+
+
+def _identifier_name_is_safe(name: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name))
+
+
+def _matches_patterns(value: str, patterns: list[str]) -> bool:
+    return any(pattern == "*" or fnmatchcase(value, pattern) for pattern in patterns)

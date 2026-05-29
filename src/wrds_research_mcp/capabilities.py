@@ -27,8 +27,11 @@ def list_permission_profiles(policy_path: str | Path | None = None) -> dict[str,
             "allowed_datasets": profile.allowed_datasets,
             "max_date_span_days": profile.max_date_span_days,
             "max_rows": profile.max_rows,
+            "max_generic_rows": profile.max_generic_rows,
             "output_root": profile.output_root,
             "allow_raw_sql": profile.allow_raw_sql,
+            "allowed_libraries": profile.allowed_libraries,
+            "blocked_libraries": profile.blocked_libraries,
         }
     return {"profiles": profiles}
 

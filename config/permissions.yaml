@@ -12,8 +12,11 @@ profiles:
       - crsp_monthly_returns
     max_date_span_days: 366
     max_rows: 100000
+    max_generic_rows: 1000
     output_root: data/demo
     allow_raw_sql: false
+    allowed_libraries: []
+    blocked_libraries: []
 
   wrds_readonly:
     description: Read-only WRDS profile for approved CRSP stock return queries.
@@ -23,8 +26,14 @@ profiles:
       - crsp_monthly_returns
     max_date_span_days: 366
     max_rows: 100000
+    max_generic_rows: 5000
     output_root: data/wrds
     allow_raw_sql: false
+    allowed_libraries:
+      - "*"
+    blocked_libraries:
+      - information_schema
+      - pg_catalog
 
 datasets:
   crsp_daily_returns:

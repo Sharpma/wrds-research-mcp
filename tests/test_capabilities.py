@@ -10,6 +10,7 @@ def test_list_permission_profiles_exposes_wrds_readonly() -> None:
     profiles = list_permission_profiles()
 
     assert profiles["profiles"]["wrds_readonly"]["source"] == "wrds"
+    assert profiles["profiles"]["wrds_readonly"]["allowed_libraries"] == ["*"]
 
 
 def test_list_datasets_exposes_monthly_returns() -> None:

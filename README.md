@@ -143,6 +143,11 @@ The MCP server exposes discoverable tools instead of a raw SQL endpoint:
 - `describe_wrds_dataset`: inspect identifiers, fields, tables, templates, and limits
 - `read_wrds_data_dictionary`: read allowed dataset/table/field metadata
 - `search_wrds_data_dictionary`: search the allowed data dictionary
+- `list_accessible_wrds_libraries`: discover live WRDS libraries allowed by the profile
+- `list_accessible_wrds_tables`: discover live tables in one library
+- `describe_accessible_wrds_table`: inspect live columns for one `library.table`
+- `probe_accessible_wrds_tables`: check SELECT privilege without reading table rows
+- `materialize_accessible_wrds_table`: guarded generic table extract with structured filters
 - `plan_wrds_research_request`: parse natural language into an approved request and query plan
 - `get_research_data`: execute the approved request and write Parquet plus metadata
 
@@ -152,6 +157,10 @@ Recommended Agent flow:
 list_wrds_profiles
 list_wrds_datasets(profile="wrds_readonly")
 read_wrds_data_dictionary(profile="wrds_readonly", source="catalog")
+list_accessible_wrds_libraries(profile="wrds_readonly")
+list_accessible_wrds_tables(library="crsp", search="stkmth")
+describe_accessible_wrds_table(library="crsp", table="stkmthsecuritydata")
+probe_accessible_wrds_tables(profile="wrds_readonly", library="crsp")
 describe_wrds_dataset(dataset="crsp_monthly_returns", profile="wrds_readonly")
 search_wrds_data_dictionary(query="monthly return", dataset="crsp_monthly_returns")
 plan_wrds_research_request(request="Get AAPL monthly returns for 2025", profile="wrds_readonly")
@@ -162,6 +171,24 @@ get_research_data(request="Get AAPL monthly returns for 2025", profile="wrds_rea
 
 - `catalog`: local policy/catalog metadata, no WRDS connection required
 - `wrds`: live WRDS table descriptions for approved tables only
+
+The generic table extractor does not accept raw SQL. It accepts only structured arguments:
+
+```text
+materialize_accessible_wrds_table(
+  library="crsp",
+  table="stkmthsecuritydata",
+  columns=["permno", "ticker", "mthcaldt", "mthret"],
+  filters=[
+    {"column": "permno", "op": "eq", "value": 14593},
+    {"column": "mthcaldt", "op": "between", "start": "2025-01-01", "end": "2025-12-31"}
+  ],
+  limit=1000,
+  profile="wrds_readonly"
+)
+```
+
+The `wrds_readonly` profile allows dynamic discovery across WRDS libraries visible to your account, blocks PostgreSQL system schemas, validates live table/column names, and caps generic extracts with `max_generic_rows`.
 
 The execution tool accepts:
 
