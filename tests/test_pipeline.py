@@ -29,7 +29,7 @@ def test_pipeline_materializes_mock_parquet(tmp_path) -> None:
     assert metadata["request"]["ticker"] == "AAPL"
     assert metadata["source"] == "mock"
     assert metadata["permission_profile"] == "test_demo"
-    assert "crsp.dsf" in metadata["catalog"]["tables"]
+    assert "crsp.stkdlysecuritydata" in metadata["catalog"]["tables"]
 
 
 def _write_test_policy(tmp_path):
@@ -50,8 +50,8 @@ profiles:
 datasets:
   crsp_daily_returns:
     tables:
-      - crsp.dsf
-      - crsp.stocknames
+      - crsp.stkdlysecuritydata
+      - crsp.stocknames_v2
     allowed_fields:
       - date
       - permno
@@ -70,7 +70,7 @@ datasets:
     allowed_output_formats:
       - parquet
     allowed_query_templates:
-      - crsp_daily_returns_v1
+      - crsp_daily_returns_v2
 """,
         encoding="utf-8",
     )

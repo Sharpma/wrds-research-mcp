@@ -28,8 +28,8 @@ datasets:
   crsp_daily_returns:
     description: CRSP daily stock returns with security-name resolution.
     tables:
-      - crsp.dsf
-      - crsp.stocknames
+      - crsp.stkdlysecuritydata
+      - crsp.stocknames_v2
     allowed_fields:
       - date
       - permno
@@ -48,4 +48,4 @@ datasets:
     allowed_output_formats:
       - parquet
     allowed_query_templates:
-      - crsp_daily_returns_v1
+      - crsp_daily_returns_v2

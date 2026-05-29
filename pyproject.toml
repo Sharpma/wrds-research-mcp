@@ -3,7 +3,7 @@ name = "wrds-research-mcp"
 version = "0.1.0"
 description = "Minimal demo for natural-language WRDS research data requests."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "pyarrow>=16.0.0",
     "PyYAML>=6.0.0",

@@ -60,7 +60,7 @@ def test_policy_rejects_disallowed_query_table() -> None:
         dataset="crsp_daily_returns",
         tables=["comp.funda"],
         fields=["ret"],
-        template_id="crsp_daily_returns_v1",
+        template_id="crsp_daily_returns_v2",
     )
 
     with pytest.raises(PolicyViolation, match="disallowed tables"):

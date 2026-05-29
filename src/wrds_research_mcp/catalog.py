@@ -1,7 +1,7 @@
 CATALOG = {
     "crsp_daily_returns": {
         "label": "CRSP daily stock returns",
-        "tables": ["crsp.dsf", "crsp.stocknames"],
+        "tables": ["crsp.stkdlysecuritydata", "crsp.stocknames_v2"],
         "frequency": "daily",
         "identifiers": ["ticker", "permno"],
         "fields": {

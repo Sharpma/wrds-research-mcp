@@ -10,21 +10,21 @@ def build_crsp_daily_returns_query(
 ) -> QueryPlan:
     sql = """
 select
-    d.date,
+    d.dlycaldt as date,
     d.permno,
     sn.ticker,
-    d.ret,
-    d.retx,
-    abs(d.prc) as prc,
-    d.vol
-from crsp.dsf as d
-join crsp.stocknames as sn
+    d.dlyret::double precision as ret,
+    d.dlyretx::double precision as retx,
+    abs(d.dlyprc)::double precision as prc,
+    d.dlyvol::bigint as vol
+from crsp.stkdlysecuritydata as d
+join crsp.stocknames_v2 as sn
     on d.permno = sn.permno
-    and d.date between sn.namedt and coalesce(sn.nameendt, date '9999-12-31')
+    and d.dlycaldt between sn.namedt and coalesce(sn.nameenddt, date '9999-12-31')
 where d.permno = %(permno)s
     and sn.ticker = %(ticker)s
-    and d.date between %(start_date)s and %(end_date)s
-order by d.date
+    and d.dlycaldt between %(start_date)s and %(end_date)s
+order by d.dlycaldt
 limit %(max_rows)s
 """.strip()
 
@@ -38,7 +38,7 @@ limit %(max_rows)s
             "max_rows": max_rows,
         },
         dataset=request.dataset,
-        tables=["crsp.dsf", "crsp.stocknames"],
+        tables=["crsp.stkdlysecuritydata", "crsp.stocknames_v2"],
         fields=["date", "permno", "ticker", "ret", "retx", "prc", "vol"],
-        template_id="crsp_daily_returns_v1",
+        template_id="crsp_daily_returns_v2",
     )

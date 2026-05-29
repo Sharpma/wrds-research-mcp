@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import os
+from pathlib import Path
 from typing import Protocol
 
 from wrds_research_mcp.models import QueryPlan, ResearchRequest, SecurityIdentifier
@@ -57,7 +59,7 @@ class WRDSCRSPClient:
         except ImportError as exc:
             raise RuntimeError("Install WRDS support with: uv sync --extra wrds") from exc
 
-        self.connection = wrds.Connection()
+        self.connection = wrds.Connection(**_wrds_connection_kwargs())
 
     def fetch_daily_returns(
         self,
@@ -82,6 +84,48 @@ def get_data_client(source: str) -> DataClient:
     if normalized == "wrds":
         return WRDSCRSPClient()
     raise ValueError("source must be either 'mock' or 'wrds'.")
+
+
+def _wrds_connection_kwargs() -> dict[str, str]:
+    username = (
+        os.environ.get("WRDS_USERNAME")
+        or os.environ.get("WRDS_USER")
+        or os.environ.get("PGUSER")
+    )
+    password = (
+        os.environ.get("WRDS_PASSWORD")
+        or os.environ.get("WRDS_PASS")
+        or os.environ.get("PGPASSWORD")
+    )
+
+    if not username:
+        raise RuntimeError(
+            "WRDS username is not configured. Set WRDS_USERNAME or PGUSER before "
+            "using the wrds_readonly profile."
+        )
+
+    kwargs = {"wrds_username": username}
+    if password:
+        kwargs["wrds_password"] = password
+        return kwargs
+
+    if _pgpass_exists():
+        return kwargs
+
+    raise RuntimeError(
+        "WRDS password is not configured. Set WRDS_PASSWORD/PGPASSWORD, or set "
+        "WRDS_USERNAME and configure a local pgpass file. Do not send WRDS "
+        "passwords through chat."
+    )
+
+
+def _pgpass_exists() -> bool:
+    candidates = [
+        Path.home() / ".pgpass",
+        Path(os.environ.get("APPDATA", "")) / "postgresql" / "pgpass.conf",
+        Path.home() / ".pg_service.conf",
+    ]
+    return any(path.exists() for path in candidates)
 
 
 def _business_days(start_date: date, end_date: date) -> list[date]:

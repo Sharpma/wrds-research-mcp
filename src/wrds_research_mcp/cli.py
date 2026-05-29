@@ -55,6 +55,9 @@ def main() -> None:
     except PolicyViolation as exc:
         print(f"Permission denied: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
+    except RuntimeError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
 
     print(json.dumps(result.as_dict(), indent=2, ensure_ascii=False))
 

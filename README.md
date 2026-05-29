@@ -7,7 +7,7 @@ This `demo` branch contains a minimal, runnable proof of concept:
 1. Parse a natural-language request such as `我现在要2025年1月苹果公司的日度收益率数据`.
 2. Convert it into a structured CRSP daily returns request.
 3. Resolve Apple/AAPL to a demo CRSP identifier.
-4. Build a parameterized WRDS SQL query plan for `crsp.dsf` and `crsp.stocknames`.
+4. Build a parameterized WRDS SQL query plan for `crsp.stkdlysecuritydata` and `crsp.stocknames_v2`.
 5. Validate the request against `config/permissions.yaml`.
 6. Materialize deterministic mock rows as Parquet plus metadata.
 
@@ -70,13 +70,24 @@ The server rejects requests that try to use a source, table, field, query templa
 Install optional WRDS support:
 
 ```powershell
-uv sync --extra wrds
+uv sync --python 3.11 --extra wrds
 ```
+
+The WRDS package path is tested with Python 3.11/3.12. The project avoids Python 3.13+ for now because the WRDS dependency stack may not provide compatible wheels there yet.
+
+Configure credentials locally. Do not paste WRDS passwords into Codex chat.
+
+```powershell
+$env:WRDS_USERNAME = "your_wrds_username"
+$env:WRDS_PASSWORD = "your_wrds_password"
+```
+
+Alternatively, set `WRDS_USERNAME` and configure a local PostgreSQL `pgpass` file.
 
 Then run:
 
 ```powershell
-uv run wrds-research-demo "Get AAPL daily returns for 2025-01" --profile wrds_readonly
+uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL daily returns for 2025-01" --profile wrds_readonly
 ```
 
 WRDS authentication should be configured through the normal WRDS mechanisms, such as `.pgpass` or environment-backed local configuration. Do not commit credentials.
