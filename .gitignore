@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+.venv/
+venv/
+env/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Data outputs
+data/
+*.parquet
+*.csv
+*.sqlite
+*.db
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
