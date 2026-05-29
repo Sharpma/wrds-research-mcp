@@ -71,10 +71,13 @@ MCP config, or chat.
 Run a real WRDS request:
 
 ```powershell
-wrds-research `
+wrds-research --source wrds `
   "Get AAPL monthly returns for 2025" `
-  --profile wrds_readonly
 ```
+
+`--source wrds` automatically selects the `wrds_readonly` profile. Without `--source`,
+the CLI uses `wrds_readonly` when WRDS credentials are configured and falls back to `demo`
+otherwise.
 
 ## Use With Codex
 
@@ -111,6 +114,19 @@ codex.cmd mcp get --json wrds-research-mcp
 
 The server is a stdio MCP process, so running `wrds-research-mcp` directly may appear to
 hang. That is expected; it is waiting for MCP JSON-RPC messages on stdin.
+
+For the shortest agent path, call the execution tool directly and omit `output_dir` unless
+you have a custom policy:
+
+```text
+get_research_data(
+  request="Get AAPL monthly returns for 2025",
+  source="wrds"
+)
+```
+
+This selects `wrds_readonly` automatically and writes under
+`~/.wrds-research-mcp/data/wrds`.
 
 ## MCP Tools
 

@@ -32,12 +32,37 @@ def test_pipeline_materializes_mock_parquet(tmp_path) -> None:
     assert "crsp.stkdlysecuritydata" in metadata["catalog"]["tables"]
 
 
+def test_pipeline_auto_profile_uses_source_hint(tmp_path) -> None:
+    parquet = pytest.importorskip("pyarrow.parquet")
+    policy_path = _write_test_policy(tmp_path)
+
+    result = run_research_request(
+        "Get AAPL daily return data for 2025-01",
+        source="mock",
+        profile="auto",
+        policy_path=policy_path,
+    )
+
+    assert result.permission_profile == "demo"
+    assert result.source == "mock"
+    assert result.dataset.output_path.exists()
+
+
 def _write_test_policy(tmp_path):
     output_root = (tmp_path / "outputs").as_posix()
     policy_path = tmp_path / "permissions.yaml"
     policy_path.write_text(
         f"""
 profiles:
+  demo:
+    source: mock
+    allowed_datasets:
+      - crsp_daily_returns
+    max_date_span_days: 366
+    max_rows: 100000
+    output_root: {output_root}
+    allow_raw_sql: false
+
   test_demo:
     source: mock
     allowed_datasets:

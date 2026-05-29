@@ -23,8 +23,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--profile",
-        default="demo",
-        help="Permission profile from the MCP permission policy.",
+        default="auto",
+        help=(
+            "Permission profile from the MCP permission policy. "
+            "Use auto to prefer wrds_readonly when WRDS credentials are configured."
+        ),
     )
     parser.add_argument(
         "--policy-path",
