@@ -1,9 +1,26 @@
 [project]
 name = "wrds-research-mcp"
 version = "0.1.0"
-description = "Minimal demo for natural-language WRDS research data requests."
+description = "MCP server and CLI for guarded, natural-language WRDS research data access."
 readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "wrds-research-mcp contributors" },
+]
 requires-python = ">=3.10,<3.13"
+keywords = ["wrds", "mcp", "research", "finance", "parquet", "crsp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 dependencies = [
     "pyarrow>=16.0.0",
     "PyYAML>=6.0.0",
@@ -16,18 +33,46 @@ wrds = [
 mcp = [
     "mcp>=1.9.0",
 ]
+all = [
+    "mcp>=1.9.0",
+    "wrds>=3.2.0",
+]
 dev = [
+    "build>=1.2.0",
     "pytest>=8.0.0",
 ]
 
 [project.scripts]
+wrds-research = "wrds_research_mcp.cli:main"
 wrds-research-demo = "wrds_research_mcp.cli:main"
 wrds-research-mcp = "wrds_research_mcp.server:main"
 wrds-research-setup = "wrds_research_mcp.setup_cli:main"
 
+[project.urls]
+Homepage = "https://github.com/Sharpma/wrds-research-mcp"
+Repository = "https://github.com/Sharpma/wrds-research-mcp"
+Issues = "https://github.com/Sharpma/wrds-research-mcp/issues"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wrds_research_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/config",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/pyproject.toml",
+    "/uv.lock",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -8,12 +8,12 @@ from wrds_research_mcp.pipeline import run_research_request
 from wrds_research_mcp.policy import PolicyViolation
 
 
-DEFAULT_REQUEST = "我现在要2025年1月苹果公司的日度收益率数据"
+DEFAULT_REQUEST = "Get AAPL daily returns for 2025-01"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run the minimal WRDS research data demo.",
+        description="Run a natural-language WRDS research data request.",
     )
     parser.add_argument(
         "request",
@@ -24,12 +24,12 @@ def main() -> None:
     parser.add_argument(
         "--profile",
         default="demo",
-        help="Permission profile from config/permissions.yaml.",
+        help="Permission profile from the MCP permission policy.",
     )
     parser.add_argument(
         "--policy-path",
         default=None,
-        help="Path to the MCP permission policy file.",
+        help="Path to a custom MCP permission policy file. Defaults to the package policy.",
     )
     parser.add_argument(
         "--output-dir",

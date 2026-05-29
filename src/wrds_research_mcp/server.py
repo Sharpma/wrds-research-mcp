@@ -24,7 +24,10 @@ def build_server():
         from mcp.server.fastmcp import FastMCP
         from mcp.types import ToolAnnotations
     except ImportError as exc:
-        raise RuntimeError("Install MCP support with: uv sync --extra mcp") from exc
+        raise RuntimeError(
+            "Install MCP support with: pip install 'wrds-research-mcp[mcp]' "
+            "or uv sync --extra mcp"
+        ) from exc
 
     mcp = FastMCP("wrds-research-mcp")
 

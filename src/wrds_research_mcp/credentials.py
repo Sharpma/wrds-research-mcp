@@ -102,7 +102,10 @@ def test_wrds_credentials(username: str) -> dict[str, Any]:
         return {
             "attempted": True,
             "ok": False,
-            "message": "Install WRDS support with: uv sync --extra wrds",
+            "message": (
+                "Install WRDS support with: pip install 'wrds-research-mcp[wrds]' "
+                "or uv sync --extra wrds"
+            ),
         }
 
     try:

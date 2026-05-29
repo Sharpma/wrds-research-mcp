@@ -1,4 +1,4 @@
-# Permission profiles for MCP-accessible research data.
+# Default permission profiles for MCP-accessible research data.
 #
 # Keep this file conservative. The model may interpret intent, but this policy
 # decides what the server is allowed to query and where it may write outputs.

@@ -182,7 +182,7 @@ def _write_generic_dataframe(
         import pyarrow as pa
         import pyarrow.parquet as pq
     except ImportError as exc:
-        raise RuntimeError("Install parquet support with: uv sync") from exc
+        raise RuntimeError("Install parquet support with: pip install wrds-research-mcp") from exc
 
     generated_at = datetime.now(timezone.utc)
     table_dir = output_root / "generic" / f"library-{library}" / f"table-{table}"

@@ -21,7 +21,7 @@ def write_parquet_dataset(
         import pyarrow as pa
         import pyarrow.parquet as pq
     except ImportError as exc:
-        raise RuntimeError("Install parquet support with: uv sync") from exc
+        raise RuntimeError("Install parquet support with: pip install wrds-research-mcp") from exc
 
     output_root = Path(output_dir)
     dataset_dir = output_root / request.dataset / f"symbol={security.ticker}"
@@ -58,7 +58,7 @@ def write_parquet_dataset(
         "row_count": len(rows),
         "notes": [
             "Demo source returns deterministic mock rows.",
-            "WRDS source uses the same query plan against crsp.dsf and crsp.stocknames.",
+            "WRDS source uses the approved query plan against current CRSP security tables.",
             "Return fields are decimals, not percentages.",
         ],
     }

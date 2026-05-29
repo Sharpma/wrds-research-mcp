@@ -11,7 +11,10 @@ def connect_wrds_quietly() -> Any:
     try:
         import wrds
     except ImportError as exc:
-        raise RuntimeError("Install WRDS support with: uv sync --extra wrds") from exc
+        raise RuntimeError(
+            "Install WRDS support with: pip install 'wrds-research-mcp[wrds]' "
+            "or uv sync --extra wrds"
+        ) from exc
 
     with redirect_stdout(io.StringIO()):
         return wrds.Connection(**_wrds_connection_kwargs())

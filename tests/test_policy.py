@@ -15,6 +15,16 @@ from wrds_research_mcp.policy import (
 )
 
 
+def test_default_policy_loads_outside_repo_root(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    document = load_policy_document()
+
+    profile = get_permission_profile(document, "wrds_readonly")
+    assert profile.source == "wrds"
+    assert "*" in profile.allowed_libraries
+
+
 def test_demo_profile_rejects_wrds_source() -> None:
     document = load_policy_document()
     profile = get_permission_profile(document, "demo")

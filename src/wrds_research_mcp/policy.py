@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.resources import files
 import re
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
@@ -12,6 +13,7 @@ from wrds_research_mcp.models import QueryPlan, ResearchRequest
 
 
 DEFAULT_POLICY_PATH = Path("config/permissions.yaml")
+DEFAULT_POLICY_RESOURCE = "default_permissions.yaml"
 
 TABLE_REF_RE = re.compile(r"\b(?:from|join)\s+([a-zA-Z_][\w]*\.[a-zA-Z_][\w]*)", re.IGNORECASE)
 FORBIDDEN_SQL_RE = re.compile(
@@ -52,16 +54,26 @@ class DatasetPolicy:
 
 
 def load_policy_document(policy_path: str | Path | None = None) -> dict[str, Any]:
-    path = Path(policy_path) if policy_path else DEFAULT_POLICY_PATH
-    if not path.exists():
-        raise FileNotFoundError(f"Permission policy file not found: {path}")
+    if policy_path:
+        path = Path(policy_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Permission policy file not found: {path}")
+        text = path.read_text(encoding="utf-8")
+    else:
+        text = _read_default_policy_text()
 
-    document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    document = yaml.safe_load(text) or {}
     if not isinstance(document, dict):
         raise PolicyViolation("Permission policy must be a mapping.")
     if "profiles" not in document or "datasets" not in document:
         raise PolicyViolation("Permission policy must define profiles and datasets.")
     return document
+
+
+def _read_default_policy_text() -> str:
+    return files("wrds_research_mcp").joinpath(DEFAULT_POLICY_RESOURCE).read_text(
+        encoding="utf-8"
+    )
 
 
 def get_permission_profile(document: dict[str, Any], profile_name: str) -> PermissionProfile:

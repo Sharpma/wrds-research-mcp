@@ -1,181 +1,103 @@
 # wrds-research-mcp
 
-Natural-language access layer for WRDS research data.
+`wrds-research-mcp` is an MCP server and Python CLI for guarded WRDS research data access.
+It lets an agent discover available WRDS libraries and tables, inspect table dictionaries,
+choose an approved extraction path, and materialize analysis-ready Parquet files.
 
-This `demo` branch contains a minimal, runnable proof of concept:
+The project is currently alpha. It includes:
 
-1. Parse a natural-language request such as `我现在要2025年1月苹果公司的日度收益率数据`.
-2. Convert it into a structured CRSP daily or monthly returns request.
-3. Resolve Apple/AAPL to a demo CRSP identifier.
-4. Build a parameterized WRDS SQL query plan from an approved query template.
-5. Validate the request against `config/permissions.yaml`.
-6. Materialize deterministic mock rows as Parquet plus metadata.
+- a local deterministic demo profile that does not require WRDS credentials
+- a WRDS read-only profile for real WRDS access
+- approved CRSP daily and monthly return workflows
+- live WRDS library/table/column discovery
+- guarded generic table extracts with structured filters
+- Parquet outputs plus JSON metadata
 
-The default path uses mock data so the demo can run before WRDS credentials are configured. A WRDS client hook is included for the same query plan.
+The server intentionally does not expose a raw SQL execution tool.
 
-## Quick Start
-
-```powershell
-git switch demo
-uv run wrds-research-demo
-```
-
-Run with an explicit request:
-
-```powershell
-uv run wrds-research-demo "我现在要2025年1月苹果公司的日度收益率数据"
-```
-
-The demo writes ignored local outputs under:
-
-```text
-data/demo/crsp_daily_returns/symbol=AAPL/
-```
-
-Each run produces:
-
-- `*.parquet`: analysis-ready tabular data
-- `*.metadata.json`: request, identifier, catalog, and SQL query plan metadata
-
-## New Machine Setup
-
-On a fresh machine, use the setup helper once. It prompts for your WRDS username and password, writes the standard PostgreSQL `pgpass` file, and tests the WRDS connection.
+## Install From Source
 
 ```powershell
 git clone https://github.com/Sharpma/wrds-research-mcp.git
 cd wrds-research-mcp
-git switch demo
-uv run --python 3.11 --extra wrds wrds-research-setup
+git switch package
+uv sync --python 3.11 --extra all --extra dev
 ```
 
-After that, WRDS commands and the MCP server can discover the username from `pgpass`; you should not need to set `$env:WRDS_USERNAME` manually.
-
-Interactive setup is the recommended path. `wrds-research-setup --password-stdin` exists for automation when a secret manager can pipe the password securely.
-
-Test with real WRDS:
+Run the local demo:
 
 ```powershell
-uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL monthly returns for 2025" --profile wrds_readonly
+uv run wrds-research "Get AAPL daily returns for 2025-01"
 ```
 
-Register with Codex:
+The demo writes local ignored outputs under `data/demo`.
 
-```powershell
-codex mcp add wrds-research-mcp -- uv --directory <path-to-wrds-research-mcp> run --python 3.11 --extra mcp --extra wrds wrds-research-mcp
-```
+## Configure WRDS
 
-Do not put WRDS passwords in `codex mcp add --env`, `.env`, README examples, or chat.
-
-## Permission Policy
-
-MCP data access is controlled by `config/permissions.yaml`.
-
-The demo intentionally avoids exposing a raw SQL tool. The model can submit a research request, but the server only executes approved query templates against approved datasets.
-
-Current profiles:
-
-- `demo`: uses deterministic mock data and writes under `data/demo`
-- `wrds_readonly`: uses WRDS and writes under `data/wrds`
-
-Each profile controls:
-
-- allowed datasets
-- source backend, such as `mock` or `wrds`
-- maximum date span
-- maximum returned rows
-- allowed output root
-- whether raw SQL is allowed
-
-Run a specific profile:
-
-```powershell
-uv run wrds-research-demo "Get AAPL daily returns for 2025-01" --profile demo
-uv run wrds-research-demo "Get AAPL monthly returns for 2025" --profile demo
-```
-
-The server rejects requests that try to use a source, table, field, query template, or output directory outside the selected profile.
-
-## Optional WRDS Mode
-
-Install optional WRDS support:
-
-```powershell
-uv sync --python 3.11 --extra wrds
-```
-
-The WRDS package path is tested with Python 3.11/3.12. The project avoids Python 3.13+ for now because the WRDS dependency stack may not provide compatible wheels there yet.
-
-Configure credentials locally. Do not paste WRDS passwords into Codex chat.
+Run the setup helper once on each machine:
 
 ```powershell
 uv run --python 3.11 --extra wrds wrds-research-setup
 ```
 
-Alternatively, set `WRDS_USERNAME`/`WRDS_PASSWORD` yourself, but the setup helper is the preferred path.
+It prompts for your WRDS username and password, writes the standard PostgreSQL `pgpass`
+file, and tests the connection. After setup, the MCP server can infer your username from
+`pgpass`; you should not need to put credentials in command-line arguments, README files,
+MCP config, or chat.
 
-Then run:
-
-```powershell
-uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL daily returns for 2025-01" --profile wrds_readonly
-uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL monthly returns for 2025" --profile wrds_readonly
-```
-
-WRDS authentication should be configured through the normal WRDS mechanisms, such as `.pgpass` or environment-backed local configuration. Do not commit credentials.
-
-## Optional MCP Server
-
-Install optional MCP support:
+Run a real WRDS request:
 
 ```powershell
-uv sync --extra mcp
+uv run --python 3.11 --extra wrds wrds-research `
+  "Get AAPL monthly returns for 2025" `
+  --profile wrds_readonly
 ```
 
-Run the stdio MCP server:
+## Use With Codex
+
+For local development, register the stdio MCP server:
 
 ```powershell
-uv run wrds-research-mcp
+codex mcp add wrds-research-mcp -- uv --directory <path-to-wrds-research-mcp> run --python 3.11 --extra all wrds-research-mcp
 ```
 
-The MCP server exposes discoverable tools instead of a raw SQL endpoint:
+Do not add WRDS passwords through `codex mcp add --env`. Use `wrds-research-setup`
+instead.
 
-- `list_wrds_profiles`: discover profiles, sources, limits, and dataset allowlists
-- `list_wrds_datasets`: discover datasets allowed by a profile
-- `describe_wrds_dataset`: inspect identifiers, fields, tables, templates, and limits
-- `read_wrds_data_dictionary`: read allowed dataset/table/field metadata
-- `search_wrds_data_dictionary`: search the allowed data dictionary
-- `list_accessible_wrds_libraries`: discover live WRDS libraries allowed by the profile
-- `list_accessible_wrds_tables`: discover live tables in one library
+## MCP Tools
+
+The MCP server exposes discoverable tools and resources:
+
+- `list_wrds_profiles`: list profiles, sources, limits, and allowlists
+- `list_wrds_datasets`: list locally approved dataset contracts
+- `describe_wrds_dataset`: inspect one approved dataset contract
+- `read_wrds_data_dictionary`: read catalog or live WRDS table metadata
+- `search_wrds_data_dictionary`: search catalog or live dictionary metadata
+- `list_accessible_wrds_libraries`: list live WRDS libraries visible to the account
+- `list_accessible_wrds_tables`: list live tables in one library
 - `describe_accessible_wrds_table`: inspect live columns for one `library.table`
 - `probe_accessible_wrds_tables`: check SELECT privilege without reading table rows
-- `materialize_accessible_wrds_table`: guarded generic table extract with structured filters
-- `plan_wrds_research_request`: parse natural language into an approved request and query plan
-- `get_research_data`: execute the approved request and write Parquet plus metadata
+- `materialize_accessible_wrds_table`: write a guarded Parquet extract using structured filters
+- `plan_wrds_research_request`: parse a natural-language request into an approved plan
+- `get_research_data`: execute an approved CRSP returns workflow and write Parquet
 
-Recommended Agent flow:
+Recommended agent flow:
 
 ```text
 list_wrds_profiles
 list_wrds_datasets(profile="wrds_readonly")
-read_wrds_data_dictionary(profile="wrds_readonly", source="catalog")
 list_accessible_wrds_libraries(profile="wrds_readonly")
-list_accessible_wrds_tables(library="crsp", search="stkmth")
-describe_accessible_wrds_table(library="crsp", table="stkmthsecuritydata")
-probe_accessible_wrds_tables(profile="wrds_readonly", library="crsp")
-describe_wrds_dataset(dataset="crsp_monthly_returns", profile="wrds_readonly")
-search_wrds_data_dictionary(query="monthly return", dataset="crsp_monthly_returns")
+list_accessible_wrds_tables(profile="wrds_readonly", library="crsp", search="stkmth")
+describe_accessible_wrds_table(profile="wrds_readonly", library="crsp", table="stkmthsecuritydata")
 plan_wrds_research_request(request="Get AAPL monthly returns for 2025", profile="wrds_readonly")
 get_research_data(request="Get AAPL monthly returns for 2025", profile="wrds_readonly")
 ```
 
-`read_wrds_data_dictionary` supports two sources:
-
-- `catalog`: local policy/catalog metadata, no WRDS connection required
-- `wrds`: live WRDS table descriptions for approved tables only
-
-The generic table extractor does not accept raw SQL. It accepts only structured arguments:
+Generic extracts use structured arguments, not raw SQL:
 
 ```text
 materialize_accessible_wrds_table(
+  profile="wrds_readonly",
   library="crsp",
   table="stkmthsecuritydata",
   columns=["permno", "ticker", "mthcaldt", "mthret"],
@@ -183,26 +105,11 @@ materialize_accessible_wrds_table(
     {"column": "permno", "op": "eq", "value": 14593},
     {"column": "mthcaldt", "op": "between", "start": "2025-01-01", "end": "2025-12-31"}
   ],
-  limit=1000,
-  profile="wrds_readonly"
+  limit=1000
 )
 ```
 
-The `wrds_readonly` profile allows dynamic discovery across WRDS libraries visible to your account, blocks PostgreSQL system schemas, validates live table/column names, and caps generic extracts with `max_generic_rows`.
-
-The execution tool accepts:
-
-```text
-get_research_data(
-  request: str,
-  profile: str = "demo",
-  output_dir: str | None = None,
-  source: str | None = None,
-  policy_path: str | None = None
-)
-```
-
-The server also exposes JSON resources:
+Resources:
 
 ```text
 wrds://profiles
@@ -210,16 +117,46 @@ wrds://datasets
 wrds://dictionary
 ```
 
-## Tests
+## Permission Model
+
+Default policy is packaged with the library in `wrds_research_mcp/default_permissions.yaml`.
+A repo copy is also kept at `config/permissions.yaml` as an editable template.
+
+Profiles control:
+
+- source backend: `mock` or `wrds`
+- approved dataset contracts
+- maximum date span
+- maximum rows
+- maximum generic extract rows
+- allowed output root
+- allowed and blocked WRDS libraries
+- raw SQL access, disabled by default
+
+Use a custom policy file with:
 
 ```powershell
-uv run --extra dev pytest
+uv run wrds-research "Get AAPL daily returns for 2025-01" --policy-path config/permissions.yaml
 ```
 
-## Current Demo Limits
+## Development
 
-- Only Apple/AAPL is included in the static identifier map.
-- Natural-language parsing is intentionally rule-based and narrow.
-- Current deterministic query templates cover CRSP daily and monthly stock returns.
-- Mock data is deterministic and is not real WRDS/CRSP data.
-- Real WRDS mode requires valid WRDS access and the optional `wrds` package.
+```powershell
+uv sync --python 3.11 --extra all --extra dev
+uv run pytest
+uv build
+```
+
+Generated Parquet files and credentials are ignored by git.
+
+## Project Status
+
+This package is not affiliated with WRDS, Wharton, CRSP, Compustat, or any data vendor.
+Users are responsible for complying with their WRDS subscription and vendor data licenses.
+
+Current high-level limits:
+
+- natural-language parsing is intentionally narrow
+- static identifier resolution currently covers AAPL only
+- approved canned workflows currently cover CRSP daily and monthly stock returns
+- broader WRDS coverage is available through live discovery plus guarded generic extracts
