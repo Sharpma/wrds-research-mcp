@@ -4,9 +4,9 @@ from contextlib import redirect_stdout
 from datetime import date, timedelta
 import io
 import os
-from pathlib import Path
 from typing import Protocol
 
+from wrds_research_mcp.credentials import find_wrds_username_in_pgpass, wrds_pgpass_exists
 from wrds_research_mcp.models import QueryPlan, ResearchRequest, SecurityIdentifier
 
 
@@ -135,6 +135,7 @@ def _wrds_connection_kwargs() -> dict[str, str]:
         os.environ.get("WRDS_USERNAME")
         or os.environ.get("WRDS_USER")
         or os.environ.get("PGUSER")
+        or find_wrds_username_in_pgpass()
     )
     password = (
         os.environ.get("WRDS_PASSWORD")
@@ -144,8 +145,8 @@ def _wrds_connection_kwargs() -> dict[str, str]:
 
     if not username:
         raise RuntimeError(
-            "WRDS username is not configured. Set WRDS_USERNAME or PGUSER before "
-            "using the wrds_readonly profile."
+            "WRDS username is not configured. Run wrds-research-setup first, "
+            "or set WRDS_USERNAME/PGUSER before using the wrds_readonly profile."
         )
 
     kwargs = {"wrds_username": username}
@@ -153,23 +154,13 @@ def _wrds_connection_kwargs() -> dict[str, str]:
         kwargs["wrds_password"] = password
         return kwargs
 
-    if _pgpass_exists():
+    if wrds_pgpass_exists():
         return kwargs
 
     raise RuntimeError(
-        "WRDS password is not configured. Set WRDS_PASSWORD/PGPASSWORD, or set "
-        "WRDS_USERNAME and configure a local pgpass file. Do not send WRDS "
-        "passwords through chat."
+        "WRDS password is not configured. Run wrds-research-setup first, or set "
+        "WRDS_PASSWORD/PGPASSWORD. Do not send WRDS passwords through chat."
     )
-
-
-def _pgpass_exists() -> bool:
-    candidates = [
-        Path.home() / ".pgpass",
-        Path(os.environ.get("APPDATA", "")) / "postgresql" / "pgpass.conf",
-        Path.home() / ".pg_service.conf",
-    ]
-    return any(path.exists() for path in candidates)
 
 
 def _business_days(start_date: date, end_date: date) -> list[date]:

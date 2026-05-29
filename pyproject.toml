@@ -23,6 +23,7 @@ dev = [
 [project.scripts]
 wrds-research-demo = "wrds_research_mcp.cli:main"
 wrds-research-mcp = "wrds_research_mcp.server:main"
+wrds-research-setup = "wrds_research_mcp.setup_cli:main"
 
 [build-system]
 requires = ["hatchling"]

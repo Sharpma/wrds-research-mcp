@@ -37,6 +37,35 @@ Each run produces:
 - `*.parquet`: analysis-ready tabular data
 - `*.metadata.json`: request, identifier, catalog, and SQL query plan metadata
 
+## New Machine Setup
+
+On a fresh machine, use the setup helper once. It prompts for your WRDS username and password, writes the standard PostgreSQL `pgpass` file, and tests the WRDS connection.
+
+```powershell
+git clone https://github.com/Sharpma/wrds-research-mcp.git
+cd wrds-research-mcp
+git switch demo
+uv run --python 3.11 --extra wrds wrds-research-setup
+```
+
+After that, WRDS commands and the MCP server can discover the username from `pgpass`; you should not need to set `$env:WRDS_USERNAME` manually.
+
+Interactive setup is the recommended path. `wrds-research-setup --password-stdin` exists for automation when a secret manager can pipe the password securely.
+
+Test with real WRDS:
+
+```powershell
+uv run --python 3.11 --extra wrds wrds-research-demo "Get AAPL monthly returns for 2025" --profile wrds_readonly
+```
+
+Register with Codex:
+
+```powershell
+codex mcp add wrds-research-mcp -- uv --directory <path-to-wrds-research-mcp> run --python 3.11 --extra mcp --extra wrds wrds-research-mcp
+```
+
+Do not put WRDS passwords in `codex mcp add --env`, `.env`, README examples, or chat.
+
 ## Permission Policy
 
 MCP data access is controlled by `config/permissions.yaml`.
@@ -79,11 +108,10 @@ The WRDS package path is tested with Python 3.11/3.12. The project avoids Python
 Configure credentials locally. Do not paste WRDS passwords into Codex chat.
 
 ```powershell
-$env:WRDS_USERNAME = "your_wrds_username"
-$env:WRDS_PASSWORD = "your_wrds_password"
+uv run --python 3.11 --extra wrds wrds-research-setup
 ```
 
-Alternatively, set `WRDS_USERNAME` and configure a local PostgreSQL `pgpass` file.
+Alternatively, set `WRDS_USERNAME`/`WRDS_PASSWORD` yourself, but the setup helper is the preferred path.
 
 Then run:
 
