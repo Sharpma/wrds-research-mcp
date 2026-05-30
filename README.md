@@ -190,17 +190,17 @@ account-visible WRDS database space, use `search_accessible_wrds_libraries` or
 ## Permission Model
 
 Default policy is packaged with the library in `wrds_research_mcp/default_permissions.yaml`.
-A repo copy is also kept at `config/permissions.yaml` as an editable template.
+A richer editable template is kept at `config/permissions.yaml`.
 
 Profiles control:
 
 - source backend: `wrds`
-- approved dataset contracts
+- approved curated workflow contracts through `allowed_datasets`
 - maximum date span
 - maximum rows
 - maximum generic extract rows
 - allowed output root
-- allowed and blocked WRDS libraries
+- allowed and blocked live WRDS libraries through `allowed_libraries` and `blocked_libraries`
 - raw SQL access, disabled by default
 
 Use a custom policy file with:
@@ -208,6 +208,11 @@ Use a custom policy file with:
 ```powershell
 wrds-research "Get AAPL daily returns for 2025-01" --policy-path config/permissions.yaml
 ```
+
+The template includes examples for broad account-visible access, core finance databases,
+and CRSP-only access. `allowed_datasets` is intentionally small because it only governs
+curated natural-language workflows; generic WRDS discovery/extract coverage is governed by
+`allowed_libraries`.
 
 ## Development
 

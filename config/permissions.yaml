@@ -1,13 +1,24 @@
-# Permission profiles for MCP-accessible research data.
+# Permission policy template for wrds-research-mcp.
 #
-# Keep this file conservative. The model may interpret intent, but this policy
-# decides what the server is allowed to query and where it may write outputs.
+# Runtime default:
+#   Installed packages use src/wrds_research_mcp/default_permissions.yaml unless
+#   --policy-path points to this file or another custom policy.
+#
+# Important naming distinction:
+#   allowed_datasets controls curated natural-language workflows such as
+#   get_research_data / plan_wrds_research_request. These are NOT the full WRDS
+#   database allowlist.
+#
+#   allowed_libraries controls live WRDS library/schema access for discovery and
+#   generic extraction tools such as list_accessible_wrds_libraries,
+#   describe_accessible_wrds_table, and materialize_accessible_wrds_table.
 
 profiles:
   wrds_readonly:
-    description: Read-only WRDS profile for approved CRSP stock return queries and guarded generic extracts.
+    description: Broad read-only template. Allows generic discovery/extracts across all WRDS libraries visible to the account, while curated workflows remain limited to approved high-confidence tasks.
     source: wrds
     allowed_datasets:
+      # Curated workflows only. This list intentionally does not enumerate all WRDS databases.
       - crsp_daily_returns
       - crsp_monthly_returns
     max_date_span_days: 366
@@ -16,14 +27,98 @@ profiles:
     output_root: ~/.wrds-research-mcp/data/wrds
     allow_raw_sql: false
     allowed_libraries:
+      # Actual live WRDS library/schema allowlist for generic tools.
       - "*"
+    blocked_libraries:
+      - information_schema
+      - pg_catalog
+
+  wrds_core_finance:
+    description: Core finance research template covering common WRDS finance databases. Use this when broad all-library access is unnecessary.
+    source: wrds
+    allowed_datasets:
+      - crsp_daily_returns
+      - crsp_monthly_returns
+    max_date_span_days: 366
+    max_rows: 100000
+    max_generic_rows: 5000
+    output_root: ~/.wrds-research-mcp/data/wrds-core-finance
+    allow_raw_sql: false
+    allowed_libraries:
+      - crsp*
+      - comp*
+      - ibes*
+      - optionm*
+      - taq*
+      - csmar*
+      - ff*
+      - zacks*
+      - zacksamp*
+      - tfn*
+      - fisd*
+      - fisdsamp*
+      - trace*
+      - msrb*
+      - boardex*
+      - boardsmp*
+      - execcomp*
+      - audit*
+      - auditsmp*
+      - iss*
+      - risk*
+      - risksamp*
+      - factset*
+      - factsamp*
+      - ciq*
+      - ciqsamp*
+      - bvd*
+      - bvdsamp*
+      - calcbench*
+      - calcbnch*
+      - ravenpack*
+      - reprisk*
+      - msci*
+      - ftse*
+      - ftsesamp*
+      - etfg*
+      - markit*
+      - cds*
+      - preq*
+      - preqsamp*
+      - sdc*
+      - venturexpert*
+      - pitchbook*
+      - hfr*
+      - hfrsamp*
+      - mfl*
+      - bank*
+      - banksamp*
+      - snl*
+      - snlsamp*
+    blocked_libraries:
+      - information_schema
+      - pg_catalog
+
+  wrds_crsp_only:
+    description: Narrow CRSP-only template for stock return workflows and CRSP table discovery/extracts.
+    source: wrds
+    allowed_datasets:
+      - crsp_daily_returns
+      - crsp_monthly_returns
+    max_date_span_days: 366
+    max_rows: 100000
+    max_generic_rows: 5000
+    output_root: ~/.wrds-research-mcp/data/wrds-crsp
+    allow_raw_sql: false
+    allowed_libraries:
+      - crsp*
     blocked_libraries:
       - information_schema
       - pg_catalog
 
 datasets:
   crsp_daily_returns:
-    description: CRSP daily stock returns with security-name resolution.
+    description: Curated workflow for CRSP daily stock returns with security-name resolution.
     tables:
       - crsp.stkdlysecuritydata
       - crsp.stocknames_v2
@@ -48,7 +143,7 @@ datasets:
       - crsp_daily_returns_v2
 
   crsp_monthly_returns:
-    description: CRSP monthly stock returns from current monthly security data.
+    description: Curated workflow for CRSP monthly stock returns from current monthly security data.
     tables:
       - crsp.stkmthsecuritydata
     allowed_fields:

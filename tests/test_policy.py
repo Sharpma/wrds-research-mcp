@@ -9,6 +9,7 @@ from wrds_research_mcp.policy import (
     get_permission_profile,
     load_policy_document,
     resolve_output_dir,
+    validate_library_access,
     validate_query_policy,
     validate_request_policy,
     validate_source,
@@ -75,3 +76,26 @@ def test_policy_rejects_disallowed_query_table() -> None:
 
     with pytest.raises(PolicyViolation, match="disallowed tables"):
         validate_query_policy(query_plan, profile, dataset_policy)
+
+
+def test_config_policy_template_exposes_library_access_profiles() -> None:
+    document = load_policy_document("config/permissions.yaml")
+
+    assert sorted(document["profiles"]) == [
+        "wrds_core_finance",
+        "wrds_crsp_only",
+        "wrds_readonly",
+    ]
+
+    broad_profile = get_permission_profile(document, "wrds_readonly")
+    assert broad_profile.allowed_libraries == ["*"]
+
+    finance_profile = get_permission_profile(document, "wrds_core_finance")
+    validate_library_access("comp", finance_profile)
+    validate_library_access("ibes", finance_profile)
+    validate_library_access("optionm", finance_profile)
+
+    crsp_profile = get_permission_profile(document, "wrds_crsp_only")
+    validate_library_access("crsp", crsp_profile)
+    with pytest.raises(PolicyViolation):
+        validate_library_access("comp", crsp_profile)
