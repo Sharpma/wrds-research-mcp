@@ -10,10 +10,12 @@ from wrds_research_mcp.capabilities import (
 )
 from wrds_research_mcp.dictionary import read_data_dictionary, search_data_dictionary
 from wrds_research_mcp.discovery import (
+    describe_wrds_library,
     describe_wrds_table,
     list_wrds_libraries,
     list_wrds_tables,
     probe_wrds_table_access,
+    search_wrds_libraries,
 )
 from wrds_research_mcp.generic import materialize_wrds_table
 from wrds_research_mcp.pipeline import run_research_request
@@ -42,11 +44,20 @@ def build_server():
 
     @mcp.resource(
         "wrds://datasets",
-        name="WRDS dataset catalog",
-        description="Datasets available to the default WRDS read-only profile.",
+        name="Curated WRDS research workflows",
+        description="Curated high-confidence workflows, not the full WRDS database catalog.",
         mime_type="application/json",
     )
     def datasets_resource() -> str:
+        return json.dumps(list_datasets(profile="wrds_readonly"), ensure_ascii=False, indent=2)
+
+    @mcp.resource(
+        "wrds://workflows",
+        name="Curated WRDS research workflows",
+        description="Curated high-confidence workflows. Use live library tools for broader WRDS coverage.",
+        mime_type="application/json",
+    )
+    def workflows_resource() -> str:
         return json.dumps(list_datasets(profile="wrds_readonly"), ensure_ascii=False, indent=2)
 
     @mcp.resource(
@@ -76,7 +87,7 @@ def build_server():
         return list_permission_profiles(policy_path=policy_path)
 
     @mcp.tool(
-        title="List WRDS datasets",
+        title="List curated WRDS research workflows",
         annotations=ToolAnnotations(
             readOnlyHint=True,
             destructiveHint=False,
@@ -88,7 +99,23 @@ def build_server():
         profile: str = "wrds_readonly",
         policy_path: str | None = None,
     ) -> dict:
-        """List datasets allowed by a profile, including frequencies and query templates."""
+        """List curated high-confidence research workflows. This is not the full WRDS database catalog."""
+        return list_datasets(profile=profile, policy_path=policy_path)
+
+    @mcp.tool(
+        title="List curated WRDS research workflows",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def list_curated_research_workflows(
+        profile: str = "wrds_readonly",
+        policy_path: str | None = None,
+    ) -> dict:
+        """List curated high-confidence research workflows. For other WRDS data, search live libraries."""
         return list_datasets(profile=profile, policy_path=policy_path)
 
     @mcp.tool(
@@ -168,12 +195,64 @@ def build_server():
     def list_accessible_wrds_libraries(
         profile: str = "wrds_readonly",
         include_table_counts: bool = False,
+        include_descriptions: bool = True,
         policy_path: str | None = None,
     ) -> dict:
-        """List WRDS libraries allowed by the selected profile."""
+        """List live WRDS libraries allowed by the selected profile, with guidance descriptions."""
         return list_wrds_libraries(
             profile=profile,
             include_table_counts=include_table_counts,
+            include_descriptions=include_descriptions,
+            policy_path=policy_path,
+        )
+
+    @mcp.tool(
+        title="Search accessible WRDS libraries",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def search_accessible_wrds_libraries(
+        query: str,
+        profile: str = "wrds_readonly",
+        limit: int = 25,
+        policy_path: str | None = None,
+    ) -> dict:
+        """Search live WRDS libraries by name, generated domain description, topics, and agent guidance."""
+        return search_wrds_libraries(
+            query=query,
+            profile=profile,
+            limit=limit,
+            policy_path=policy_path,
+        )
+
+    @mcp.tool(
+        title="Describe accessible WRDS library",
+        annotations=ToolAnnotations(
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def describe_accessible_wrds_library(
+        library: str,
+        profile: str = "wrds_readonly",
+        include_tables: bool = False,
+        table_search: str | None = None,
+        table_limit: int = 50,
+        policy_path: str | None = None,
+    ) -> dict:
+        """Describe one live WRDS library and optionally list matching tables."""
+        return describe_wrds_library(
+            library=library,
+            profile=profile,
+            include_tables=include_tables,
+            table_search=table_search,
+            table_limit=table_limit,
             policy_path=policy_path,
         )
 

@@ -5,6 +5,7 @@ import io
 from pathlib import Path
 from typing import Any
 
+from wrds_research_mcp.library_descriptions import describe_library, library_search_text
 from wrds_research_mcp.policy import (
     get_permission_profile,
     load_policy_document,
@@ -17,6 +18,7 @@ from wrds_research_mcp.wrds_connection import is_transient_wrds_error, run_wrds_
 def list_wrds_libraries(
     profile: str = "wrds_readonly",
     include_table_counts: bool = False,
+    include_descriptions: bool = True,
     policy_path: str | Path | None = None,
 ) -> dict[str, Any]:
     permission_profile = _wrds_profile(profile, policy_path)
@@ -29,12 +31,18 @@ def list_wrds_libraries(
             except Exception:
                 continue
             entry: dict[str, Any] = {"library": library}
+            if include_descriptions:
+                entry.update(describe_library(library, detailed=False))
             if include_table_counts:
                 entry["table_count"] = len(db.list_tables(library=library))
             libraries.append(entry)
 
         return {
             "profile": profile,
+            "catalog_scope": "live_wrds_libraries_visible_to_account",
+            "guidance_note": (
+                "Descriptions are orientation guidance. Inspect live tables and columns before extraction."
+            ),
             "library_count": len(libraries),
             "libraries": libraries,
         }
@@ -69,6 +77,68 @@ def list_wrds_tables(
         }
 
     return run_wrds_operation(read_tables)
+
+
+def describe_wrds_library(
+    library: str,
+    profile: str = "wrds_readonly",
+    include_tables: bool = False,
+    table_search: str | None = None,
+    table_limit: int = 50,
+    policy_path: str | Path | None = None,
+) -> dict[str, Any]:
+    permission_profile = _wrds_profile(profile, policy_path)
+    validate_library_access(library, permission_profile)
+    guidance = describe_library(library, detailed=True)
+
+    result = {
+        "profile": profile,
+        "catalog_scope": "single_live_wrds_library",
+        "library": library,
+        "guidance": guidance,
+    }
+    if include_tables:
+        result["tables"] = list_wrds_tables(
+            library=library,
+            profile=profile,
+            search=table_search,
+            limit=table_limit,
+            policy_path=policy_path,
+        )
+    return result
+
+
+def search_wrds_libraries(
+    query: str,
+    profile: str = "wrds_readonly",
+    limit: int = 25,
+    policy_path: str | Path | None = None,
+) -> dict[str, Any]:
+    needle = query.strip().lower()
+    if not needle:
+        raise ValueError("query must not be empty.")
+    if limit <= 0:
+        raise ValueError("limit must be positive.")
+
+    libraries = list_wrds_libraries(
+        profile=profile,
+        include_table_counts=False,
+        include_descriptions=True,
+        policy_path=policy_path,
+    )["libraries"]
+    matches = [
+        library
+        for library in libraries
+        if all(term in library_search_text(library) for term in needle.split())
+    ]
+    return {
+        "profile": profile,
+        "query": query,
+        "match_count": len(matches),
+        "returned_count": min(len(matches), limit),
+        "matches": matches[:limit],
+        "next_step": "Use describe_accessible_wrds_library or list_accessible_wrds_tables on the best matching library.",
+    }
 
 
 def describe_wrds_table(

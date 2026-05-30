@@ -7,8 +7,9 @@ choose an approved extraction path, and materialize analysis-ready Parquet files
 The project is currently alpha. It includes:
 
 - a WRDS read-only profile for real WRDS access
-- approved CRSP daily and monthly return workflows
+- curated CRSP daily and monthly return workflows
 - live WRDS library/table/column discovery
+- generated guidance descriptions for visible WRDS libraries
 - guarded generic table extracts with structured filters
 - Parquet outputs plus JSON metadata
 
@@ -120,14 +121,22 @@ This uses `wrds_readonly` by default and writes under `~/.wrds-research-mcp/data
 
 ## MCP Tools
 
-The MCP server exposes discoverable tools and resources:
+The MCP server exposes two separate layers:
+
+- curated research workflows: high-confidence natural-language workflows currently covering CRSP daily and monthly returns
+- live WRDS discovery: account-visible libraries and tables with generated guidance descriptions for broader data requests
+
+Tools and resources:
 
 - `list_wrds_profiles`: list profiles, sources, limits, and allowlists
-- `list_wrds_datasets`: list locally approved dataset contracts
-- `describe_wrds_dataset`: inspect one approved dataset contract
+- `list_curated_research_workflows`: list curated workflow contracts; this is not the full WRDS database catalog
+- `list_wrds_datasets`: compatibility alias for curated workflows
+- `describe_wrds_dataset`: inspect one curated workflow contract
 - `read_wrds_data_dictionary`: read catalog or live WRDS table metadata
 - `search_wrds_data_dictionary`: search catalog or live dictionary metadata
-- `list_accessible_wrds_libraries`: list live WRDS libraries visible to the account
+- `search_accessible_wrds_libraries`: search live WRDS libraries by name, description, topics, and guidance
+- `list_accessible_wrds_libraries`: list live WRDS libraries visible to the account with guidance descriptions
+- `describe_accessible_wrds_library`: describe one live WRDS library and optionally list matching tables
 - `list_accessible_wrds_tables`: list live tables in one library
 - `describe_accessible_wrds_table`: inspect live columns for one `library.table`
 - `probe_accessible_wrds_tables`: check SELECT privilege without reading table rows
@@ -139,7 +148,9 @@ Recommended agent flow:
 
 ```text
 list_wrds_profiles
-list_wrds_datasets(profile="wrds_readonly")
+search_accessible_wrds_libraries(query="analyst forecasts", profile="wrds_readonly")
+describe_accessible_wrds_library(library="<matched_library>", include_tables=true, table_search="summary")
+list_curated_research_workflows(profile="wrds_readonly")
 list_accessible_wrds_libraries(profile="wrds_readonly")
 list_accessible_wrds_tables(profile="wrds_readonly", library="crsp", search="stkmth")
 describe_accessible_wrds_table(profile="wrds_readonly", library="crsp", table="stkmthsecuritydata")
@@ -168,8 +179,13 @@ Resources:
 ```text
 wrds://profiles
 wrds://datasets
+wrds://workflows
 wrds://dictionary
 ```
+
+`wrds://datasets` and `wrds://workflows` expose curated workflows only. For the full
+account-visible WRDS database space, use `search_accessible_wrds_libraries` or
+`list_accessible_wrds_libraries`.
 
 ## Permission Model
 
@@ -214,3 +230,4 @@ Current high-level limits:
 - static identifier resolution currently covers AAPL only
 - approved canned workflows currently cover CRSP daily and monthly stock returns
 - broader WRDS coverage is available through live discovery plus guarded generic extracts
+- library descriptions are generated orientation guidance, not authoritative data dictionaries

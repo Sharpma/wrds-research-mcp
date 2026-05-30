@@ -7,6 +7,7 @@
 - Add permission profile for WRDS read-only use.
 - Add approved CRSP daily and monthly return workflows.
 - Add live WRDS library, table, and column discovery tools.
+- Add generated guidance descriptions and search for visible WRDS libraries.
 - Add guarded generic WRDS table extraction to Parquet.
 - Add automatic reconnect/retry handling for transient WRDS disconnects.
 - Add package metadata, license, and open-source project documentation.

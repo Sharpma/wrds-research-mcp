@@ -12,18 +12,24 @@ def test_list_permission_profiles_exposes_wrds_readonly() -> None:
     assert sorted(profiles["profiles"]) == ["wrds_readonly"]
     assert profiles["profiles"]["wrds_readonly"]["source"] == "wrds"
     assert profiles["profiles"]["wrds_readonly"]["allowed_libraries"] == ["*"]
+    assert "allowed_curated_workflows" in profiles["profiles"]["wrds_readonly"]
 
 
 def test_list_datasets_exposes_monthly_returns() -> None:
     datasets = list_datasets(profile="wrds_readonly")
 
+    assert datasets["catalog_scope"] == "curated_research_workflows_only"
     assert "crsp_monthly_returns" in datasets["datasets"]
+    assert "crsp_monthly_returns" in datasets["curated_research_workflows"]
     assert datasets["datasets"]["crsp_monthly_returns"]["frequency"] == "monthly"
+    assert datasets["datasets"]["crsp_monthly_returns"]["kind"] == "curated_research_workflow"
 
 
 def test_describe_monthly_dataset_contract() -> None:
     contract = get_dataset_contract("crsp_monthly_returns", profile="wrds_readonly")
 
+    assert contract["kind"] == "curated_research_workflow"
+    assert "not the full WRDS database catalog" in contract["scope_note"]
     assert contract["tables"] == ["crsp.stkmthsecuritydata"]
     assert contract["frequency"] == "monthly"
     assert "ret" in contract["fields"]

@@ -16,6 +16,12 @@ from wrds_research_mcp.policy import (
 from wrds_research_mcp.query import build_query_plan
 
 
+CURATED_WORKFLOW_SCOPE_NOTE = (
+    "These are curated high-confidence research workflows, not the full WRDS database "
+    "catalog. For broader data requests, use live library discovery tools."
+)
+
+
 def list_permission_profiles(policy_path: str | Path | None = None) -> dict[str, Any]:
     document = load_policy_document(policy_path)
     profiles = {}
@@ -24,7 +30,7 @@ def list_permission_profiles(policy_path: str | Path | None = None) -> dict[str,
         profiles[name] = {
             "description": profile.description,
             "source": profile.source,
-            "allowed_datasets": profile.allowed_datasets,
+            "allowed_curated_workflows": profile.allowed_datasets,
             "max_date_span_days": profile.max_date_span_days,
             "max_rows": profile.max_rows,
             "max_generic_rows": profile.max_generic_rows,
@@ -42,11 +48,12 @@ def list_datasets(
 ) -> dict[str, Any]:
     document = load_policy_document(policy_path)
     permission_profile = get_permission_profile(document, profile)
-    datasets = {}
+    workflows = {}
     for dataset_name in permission_profile.allowed_datasets:
         dataset_policy = get_dataset_policy(document, dataset_name)
         catalog_entry = CATALOG.get(dataset_name, {})
-        datasets[dataset_name] = {
+        workflows[dataset_name] = {
+            "kind": "curated_research_workflow",
             "label": catalog_entry.get("label", dataset_name),
             "description": dataset_policy.description,
             "frequency": catalog_entry.get("frequency"),
@@ -56,7 +63,22 @@ def list_datasets(
             "allowed_output_formats": dataset_policy.allowed_output_formats,
             "allowed_query_templates": dataset_policy.allowed_query_templates,
         }
-    return {"profile": profile, "datasets": datasets}
+    return {
+        "profile": profile,
+        "catalog_scope": "curated_research_workflows_only",
+        "scope_note": CURATED_WORKFLOW_SCOPE_NOTE,
+        "workflow_count": len(workflows),
+        "curated_research_workflows": workflows,
+        "datasets": workflows,
+        "broader_wrds_discovery_tools": [
+            "search_accessible_wrds_libraries",
+            "list_accessible_wrds_libraries",
+            "describe_accessible_wrds_library",
+            "list_accessible_wrds_tables",
+            "describe_accessible_wrds_table",
+            "materialize_accessible_wrds_table",
+        ],
+    }
 
 
 def get_dataset_contract(
@@ -72,6 +94,8 @@ def get_dataset_contract(
     dataset_policy = get_dataset_policy(document, dataset)
     catalog_entry = CATALOG.get(dataset, {})
     return {
+        "kind": "curated_research_workflow",
+        "scope_note": CURATED_WORKFLOW_SCOPE_NOTE,
         "profile": profile,
         "dataset": dataset,
         "label": catalog_entry.get("label", dataset),
@@ -89,6 +113,14 @@ def get_dataset_contract(
             "output_root": permission_profile.output_root,
         },
         "execution_tool": "get_research_data",
+        "broader_wrds_discovery_tools": [
+            "search_accessible_wrds_libraries",
+            "list_accessible_wrds_libraries",
+            "describe_accessible_wrds_library",
+            "list_accessible_wrds_tables",
+            "describe_accessible_wrds_table",
+            "materialize_accessible_wrds_table",
+        ],
     }
 
 
